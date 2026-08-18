@@ -1,28 +1,43 @@
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --brand: #1a3c6e;
-  --brand-2: #12294f;
+  --brand: #F5821F;   /* ส้ม M Power */
+  --ink: #1d1d1f;     /* ดำนุ่ม Apple */
+  --muted: #6e6e73;
+  --line: #e8e8ed;
 }
 
 html, body {
   padding: 0;
   margin: 0;
-  background: #eef1f6;
-  color: #1f2a44;
-  font-family: 'Sarabun', -apple-system, Segoe UI, Roboto, sans-serif;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'SF Pro', Segoe UI, Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 * { box-sizing: border-box; }
 
 @layer components {
-  .card { @apply bg-white border border-[#e6ebf3] rounded-2xl; }
-  .pill { @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold; }
-  .pill-ok { @apply bg-[#e3f6e8] text-[#1a7d3a]; }
-  .pill-warn { @apply bg-[#fdeede] text-[#b5651d]; }
-  .pill-bad { @apply bg-[#fce4e4] text-[#c0392b]; }
-  .pill-mut { @apply bg-[#eef1f6] text-[#5a6a86]; }
+  .card { @apply bg-white border border-[#e8e8ed] rounded-2xl; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+  .pill { @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-medium; }
+  .pill-ok { @apply bg-[#eafaf0] text-[#1a7d3a]; }
+  .pill-warn { @apply bg-[#fff2e6] text-[#c86a1a]; }
+  .pill-bad { @apply bg-[#fdeaea] text-[#c0392b]; }
+  .pill-mut { @apply bg-[#f0f0f2] text-[#6e6e73]; }
 }
+
+/* ===== ธีม ขาว-เทา-ส้ม minimal — override สีเดิมทั้งแอป ===== */
+.text-\[\#1a3c6e\], .text-\[\#1f2a44\] { color: #1d1d1f !important; }
+.text-\[\#4da3ff\] { color: #F5821F !important; }
+.bg-\[\#1a3c6e\] { background-color: #F5821F !important; }
+.hover\:bg-\[\#153154\]:hover, .hover\:bg-\[\#12345f\]:hover { background-color: #d96f0f !important; }
+.bg-\[\#4da3ff\] { background-color: #F5821F !important; }
+.border-\[\#4da3ff\] { border-color: #F5821F !important; }
+.text-\[\#5a6a86\] { color: #6e6e73 !important; }
+.text-\[\#8593a8\] { color: #86868b !important; }
+.accent-\[\#1a3c6e\] { accent-color: #F5821F !important; }
+.border-l-4.border-\[\#1a3c6e\] { border-color: #F5821F !important; }
