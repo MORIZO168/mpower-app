@@ -8,7 +8,7 @@ function ProgressLine({ stageIndex }) {
     <div className="flex gap-1 mt-2">
       {STAGES.map((s, i) => (
         <div key={i} className="flex-1 h-1.5 rounded-full overflow-hidden bg-[#e6ebf3]" title={s}>
-          <div className="h-full" style={{ width: i < stageIndex ? "100%" : i === stageIndex ? "55%" : "0%", background: i <= stageIndex ? "#1a3c6e" : "transparent" }} />
+          <div className="h-full" style={{ width: i < stageIndex ? "100%" : i === stageIndex ? "55%" : "0%", background: i <= stageIndex ? "#F5821F" : "transparent" }} />
         </div>
       ))}
     </div>
@@ -16,9 +16,9 @@ function ProgressLine({ stageIndex }) {
 }
 
 function dotColor(p) {
-  if (isDone(p)) return "#1a7d3a";
-  if (p.jobType === "Subcontract") return "#b5651d";
-  return "#4da3ff";
+  if (isDone(p)) return "#1d1d1f";
+  if (p.jobType === "Subcontract") return "#86868b";
+  return "#F5821F";
 }
 
 export default function ProjectsPage() {
