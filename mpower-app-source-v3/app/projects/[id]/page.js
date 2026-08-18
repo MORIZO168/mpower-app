@@ -15,7 +15,7 @@ function Stepper({ stageIndex, active, onPick }) {
           <div key={i} className="flex items-center shrink-0">
             <button onClick={() => onPick(i)} className="flex items-center gap-2 px-2">
               <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold
-                ${done ? "bg-[#1a7d3a] text-white" : cur ? "bg-[#1a3c6e] text-white" : "bg-[#e6ebf3] text-[#8593a8]"}`}>
+                ${done ? "bg-[#1d1d1f] text-white" : cur ? "bg-[#1a3c6e] text-white" : "bg-[#e6ebf3] text-[#8593a8]"}`}>
                 {done ? "✓" : i + 1}
               </span>
               <span className={`text-xs whitespace-nowrap ${sel ? "font-bold text-[#1a3c6e]" : cur ? "text-[#1a3c6e]" : "text-[#8593a8]"}`}>{s}</span>
@@ -126,7 +126,7 @@ function StageAnalysis({ p }) {
         <div className="bg-[#eef7f0] rounded-lg p-3"><div className="text-xl font-bold text-[#1a7d3a]">{baht(a.savingYear)}</div><div className="text-[11px] text-[#8593a8]">ประหยัด/ปี</div></div>
         <div className="bg-[#eef7f0] rounded-lg p-3"><div className="text-xl font-bold text-[#1a7d3a]">{a.payback} ปี</div><div className="text-[11px] text-[#8593a8]">คืนทุน</div></div>
       </div>
-      <div className="space-y-2 max-w-md"><Bar label="ใช้ไฟเอง (self-consumption)" val={a.selfUse} color="#1a7d3a" /><Bar label="ขายคืนกริด" val={100 - a.selfUse} color="#4da3ff" /></div>
+      <div className="space-y-2 max-w-md"><Bar label="ใช้ไฟเอง (self-consumption)" val={a.selfUse} color="#F5821F" /><Bar label="ขายคืนกริด" val={100 - a.selfUse} color="#c7c7cc" /></div>
     </Card>
   );
 }
