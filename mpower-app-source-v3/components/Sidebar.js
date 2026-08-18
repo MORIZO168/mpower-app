@@ -18,15 +18,28 @@ const NAV = [
   { href: "/finance", label: "การเงิน", icon: "M3 6h18v12H3zM3 10h18M7 15h4" },
 ];
 
+function Logo() {
+  return (
+    <svg width="30" height="30" viewBox="0 0 48 48" aria-hidden="true">
+      <g fill="#F5821F">
+        <path d="M11 8 h13 l-4 12 h-13 z" />
+        <path d="M27 8 h13 l-4 12 h-13 z" />
+        <path d="M8 24 h13 l-4 12 h-13 z" />
+        <path d="M24 24 h13 l-4 12 h-13 z" />
+      </g>
+    </svg>
+  );
+}
+
 export default function Sidebar() {
   const path = usePathname();
   return (
-    <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col bg-[#12294f] text-white">
-      <div className="px-5 py-5 flex items-center gap-2 border-b border-white/10">
-        <div className="w-8 h-8 rounded-lg bg-[#4da3ff] flex items-center justify-center font-bold text-[#0d1f3d]">M</div>
+    <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col bg-white border-r border-[#e8e8ed] text-[#1d1d1f]">
+      <div className="px-5 py-5 flex items-center gap-2.5 border-b border-[#f0f0f2]">
+        <Logo />
         <div>
-          <div className="font-bold tracking-wide leading-none">M POWER</div>
-          <div className="text-[11px] text-white/50 mt-0.5">ระบบบริหารงานติดตั้ง</div>
+          <div className="font-semibold tracking-[0.14em] leading-none text-[#1d1d1f]">M POWER</div>
+          <div className="text-[10px] tracking-[0.3em] text-[#a1a1a6] mt-1">NATURE ENERGY</div>
         </div>
       </div>
       <nav className="flex-1 py-3 overflow-y-auto">
@@ -34,15 +47,15 @@ export default function Sidebar() {
           const active = n.href === "/" ? path === "/" : path.startsWith(n.href);
           return (
             <Link key={n.href} href={n.href}
-              className={`flex items-center gap-3 px-5 py-2.5 text-sm transition-colors ${active ? "bg-[#0d1f3d] text-white border-l-2 border-[#4da3ff]" : "text-white/70 hover:text-white hover:bg-white/5 border-l-2 border-transparent"}`}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={n.icon} /></svg>
+              className={`flex items-center gap-3 px-5 py-2.5 text-sm transition-colors border-l-2 ${active ? "bg-[#fff5ec] text-[#1d1d1f] font-semibold border-[#F5821F]" : "text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] border-transparent"}`}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active ? "#F5821F" : "currentColor"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={n.icon} /></svg>
               {n.label}
             </Link>
           );
         })}
       </nav>
-      <div className="px-5 py-3 border-t border-white/10 text-[11px] text-white/40">
-        v0.2 · ต่อ Google Sheets
+      <div className="px-5 py-3 border-t border-[#f0f0f2] text-[11px] text-[#a1a1a6]">
+        v0.3 · ต่อ Google Sheets
       </div>
     </aside>
   );
