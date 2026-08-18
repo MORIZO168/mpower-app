@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 
 const NAV = [
   { href: "/", label: "ภาพรวม", icon: "M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10" },
+  { href: "/projects", label: "โครงการ", icon: "M4 6h16M4 6v12h16V6M4 10h6M4 14h4" },
   { href: "/impact", label: "ผลกระทบ / โชว์ลูกค้า", icon: "M12 3v18M5 21c0-6 3-9 7-9M19 21c0-4-2-6-5-6M12 3c2 2 3 4 3 6" },
   { href: "/leads", label: "ลูกค้า / A-Card", icon: "M3 5h18M3 12h18M3 19h12" },
   { href: "/survey", label: "สำรวจหน้างาน", icon: "M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7zM12 11a2 2 0 100-4 2 2 0 000 4z" },
@@ -41,7 +42,7 @@ export default function Sidebar() {
         })}
       </nav>
       <div className="px-5 py-3 border-t border-white/10 text-[11px] text-white/40">
-        v0.1 · ต่อ Google Sheets
+        v0.2 · ต่อ Google Sheets
       </div>
     </aside>
   );
