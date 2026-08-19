@@ -1,6 +1,16 @@
 "use client";
 import { useState } from "react";
 
+// ===== ราคาอุปกรณ์ Atmoce (จาก Price List / SRP) — ex VAT =====
+const PL = {
+  MI1250: 4750, P5: 880, P10: 1760,
+  MC100L: 10900, MC100: 15900, MC100T: 20900,
+  ACCABLE: 605,            // MW-025025-A (2.5m)
+  JUNC1P: 640, JUNC3P: 1050, // MT-04003-A / MT-03205-A
+  BATT7: 72900,            // MS-7K-U
+  BACKUP1P: 15900, BACKUP3P: 22900, // MU100S / MU100T
+};
+
 // ===== แปลงตัวเลขเป็นข้อความภาษาไทย (บาท) =====
 function bahtText(amount) {
   amount = Math.round(amount * 100) / 100;
@@ -43,34 +53,64 @@ const int = (n) => Number(n).toLocaleString("th-TH");
 
 export default function QuotePage() {
   const [customer, setCustomer] = useState("Swerb Speciality");
-  const [kwp, setKwp] = useState(19.95);
-  const [phase, setPhase] = useState(3);
+  // ==== เริ่มจากแผงก่อน ====
   const [panelW, setPanelW] = useState(665);
-  // ต้นทุนต่อวัตต์ (แก้ได้)
-  const [cPanel, setCPanel] = useState(5.5);
-  const [cInv, setCInv] = useState(3.8);
-  const [cBos, setCBos] = useState(4.0);
-  const [cLabor, setCLabor] = useState(4.55);
-  const [margin, setMargin] = useState(30);   // กำหนดกำไรเองได้
-  const [discount, setDiscount] = useState(0); // ส่วนลด (บาท ก่อน VAT)
+  const [panelCount, setPanelCount] = useState(30);
+  const [phase, setPhase] = useState(3);
+  const [batteryKwh, setBatteryKwh] = useState(0);
+  const [backup, setBackup] = useState(false);
+  const [warranty, setWarranty] = useState(15);
+  // ต้นทุนส่วนเพิ่ม (แก้ได้ — อิง SRP)
+  const [panelBahtW, setPanelBahtW] = useState(4.3);
+  const [cMount, setCMount] = useState(1);
+  const [cBos, setCBos] = useState(3);
+  const [cInstall, setCInstall] = useState(2);
+  const [service, setService] = useState(30000);
+  const [permit, setPermit] = useState(50000);
+  // ราคา
+  const [margin, setMargin] = useState(30);
+  const [discount, setDiscount] = useState(0);
   const [roundNet, setRoundNet] = useState(true);
 
-  const W = kwp * 1000;
-  const panels = Math.ceil(W / panelW);
-  const inverters = Math.ceil(panels / 2);
-  const items = [
-    { k: "แผงโซลาร์เซลล์", v: cPanel * W },
-    { k: "Micro Inverter (Atmoce MI-1250)", v: cInv * W },
-    { k: "Combiner + Balance of System", v: cBos * W },
-    { k: "ค่าติดตั้ง / Permit / Service", v: cLabor * W },
-  ];
-  const totalCost = items.reduce((s, x) => s + x.v, 0);
-  const priceBeforeDiscount = totalCost * (1 + margin / 100);   // ราคาขายก่อน VAT (ก่อนส่วนลด)
-  const afterDiscount = priceBeforeDiscount - discount;         // รวมราคา (ก่อน VAT)
+  // ==== คำนวณจากแผง (ตามสูตร Resi_Mi-1250) ====
+  const W = panelW * panelCount;
+  const dcKwp = W / 1000;
+  const acKwac = (panelCount * 1250) / 2 / 1000;
+  const dcac = acKwac ? dcKwp / acKwac : 0;
+  const inv = Math.ceil(panelCount / 2);
+  const combiner = phase === 1
+    ? (inv < 5 ? { n: "MC100L", p: PL.MC100L } : { n: "MC100", p: PL.MC100 })
+    : { n: "MC100T", p: PL.MC100T };
+  const combQty = phase === 1 ? 1 : Math.max(1, Math.ceil(inv / 30));
+  const junc = phase === 1
+    ? { n: "MT-04003-A", p: PL.JUNC1P, q: panelCount < 9 ? 1 : panelCount < 17 ? 2 : panelCount < 25 ? 3 : 4 }
+    : { n: "MT-03205-A", p: PL.JUNC3P, q: inv < 13 ? 1 : inv < 25 ? 2 : 3 };
+  const waAddon = warranty === 20 ? { n: "MI-1250-P5", p: PL.P5, q: inv }
+    : warranty === 25 ? { n: "MI-1250-P10", p: PL.P10, q: inv } : null;
+  const battQty = Math.round((batteryKwh || 0) / 7);
+  const backupBox = backup ? (phase === 1 ? { n: "MU100S", p: PL.BACKUP1P } : { n: "MU100T", p: PL.BACKUP3P }) : null;
 
+  const bom = [
+    { sku: "MI-1250", desc: "Micro Inverter 1,250W", q: inv, p: PL.MI1250 },
+    ...(waAddon ? [{ sku: waAddon.n, desc: `รับประกันเพิ่ม (${warranty} ปี)`, q: waAddon.q, p: waAddon.p }] : []),
+    { sku: combiner.n, desc: "M-Combiner", q: combQty, p: combiner.p },
+    { sku: "MW-025025-A", desc: "AC Cable 2.5m", q: inv, p: PL.ACCABLE },
+    { sku: junc.n, desc: "Junction Adapter", q: junc.q, p: junc.p },
+    ...(battQty > 0 ? [{ sku: "MS-7K-U", desc: "M-Battery 7kWh", q: battQty, p: PL.BATT7 }] : []),
+    ...(backupBox ? [{ sku: backupBox.n, desc: "Backup Box", q: 1, p: backupBox.p }] : []),
+  ];
+  const atmoceTotal = bom.reduce((s, x) => s + x.q * x.p, 0);
+
+  const panelCost = W * panelBahtW;
+  const mounting = W * cMount;
+  const bos = W * cBos;
+  const install = W * cInstall;
+  const totalCost = atmoceTotal + panelCost + mounting + bos + install + service + permit;
+
+  const priceBeforeDiscount = totalCost * (1 + margin / 100);
+  const afterDiscount = priceBeforeDiscount - discount;
   let preVat, vat, grand, shownDiscount;
   if (roundNet) {
-    // ปัดยอดรวมทั้งสิ้น (รวม VAT) ให้เป็นเลขกลมหลักร้อย แล้วถอดกลับ
     grand = Math.round((afterDiscount * 1.07) / 100) * 100;
     preVat = Math.round((grand / 1.07) * 100) / 100;
     vat = Math.round((grand - preVat) * 100) / 100;
@@ -81,30 +121,26 @@ export default function QuotePage() {
     grand = Math.round((preVat + vat) * 100) / 100;
     shownDiscount = discount;
   }
-  const profit = preVat - totalCost;
-  const marginActual = preVat > 0 ? (profit / preVat) * 100 : 0;
   const perW = grand / W;
 
-  // Proposal (จาก Peak)
-  const annualKwh = Math.round(kwp * 1450);
+  // Proposal
+  const annualKwh = Math.round(dcKwp * 1450);
   const savingYr = Math.round(annualKwh * 4.2);
-  const payback = (grand / savingYr).toFixed(1);
+  const payback = savingYr ? (grand / savingYr).toFixed(1) : "-";
 
-  const combiner = phase === 3 ? "Atmoce Combiner MC100T" : "Atmoce Combiner MC100";
   const subItems = [
-    `แผงโซล่าเซลล์ (PV) "Aiko Solar" ${panelW}W จำนวน ${panels} แผง`,
-    `Atmoce Micro inverter 1250w ${inverters} ชุด`,
-    combiner,
+    `แผงโซล่าเซลล์ (PV) ${panelW}W จำนวน ${panelCount} แผง`,
+    `Atmoce Micro inverter MI-1250 ${inv} ชุด`,
+    `Atmoce ${combiner.n}${combQty > 1 ? ` ${combQty} ตัว` : ""}`,
+    ...(battQty > 0 ? [`Atmoce M-Battery 7kWh ${battQty} ก้อน${backupBox ? " + Backup Box" : ""}`] : []),
     `"Antai" PV Mounting Structure + Inverter Support`,
-    `"Local" DC/AC Combiner Box`,
-    `"Local" AC DC Cable and Raceway & Grounding System`,
+    `"Local" AC/DC Cable, Raceway & Grounding System`,
   ];
   const freeItems = [
     "ค่าแรงติดตั้ง ตรวจสอบ และทดสอบระบบก่อนใช้งาน",
-    "อุปกรณ์ติดตามผลและแสดงผลการผลิตไฟฟ้า (Cloud + TV/Smartphone)",
-    "ออกแบบ วาง Layout + ประเมินกำลังผลิตด้วย HelioScope",
-    "จัดทำเอกสารและขออนุญาตการไฟฟ้า PEA/MEA (เซ็นรับรองโดยสามัญวิศวกร)",
-    "จัดทำเอกสารและขออนุญาต กกพ.",
+    "อุปกรณ์ติดตามผลการผลิตไฟฟ้า (Cloud + TV/Smartphone)",
+    "ออกแบบ วาง Layout + ประเมินกำลังผลิต (HelioScope)",
+    "จัดทำเอกสารและขออนุญาต PEA/MEA + กกพ. (เซ็นรับรองโดยสามัญวิศวกร)",
     "ดูแลบำรุงรักษา + ล้างแผง 1 ครั้ง/ปี ตลอดประกัน 3 ปี",
   ];
 
@@ -117,63 +153,95 @@ export default function QuotePage() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-[#1d1d1f]">Quote Engine — สร้างใบเสนอราคา</h1>
-        <p className="text-sm text-[#6e6e73] mt-0.5">คิดจาก Peak (kWp) · กำหนดกำไรเองได้ · ใส่ส่วนลด · ยอดรวม VAT ปัดเป็นเลขเน็ท</p>
+        <p className="text-sm text-[#6e6e73] mt-0.5">เริ่มจากเลือกแผง → ระบบคิด DC/AC/อินเวอร์เตอร์ + อุปกรณ์ Atmoce ให้อัตโนมัติ</p>
       </div>
 
-      {/* ==== แผงคำนวณ ==== */}
+      {/* 1) เลือกแผง */}
       <div className="card p-5 mb-5">
-        <div className="font-semibold text-[#1d1d1f] mb-3">1) ข้อมูล + ต้นทุน</div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        <div className="font-semibold text-[#1d1d1f] mb-3">1) เลือกแผง (เริ่มจากตรงนี้)</div>
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <Field label="ชื่อลูกค้า"><input className={inCls} value={customer} onChange={(e) => setCustomer(e.target.value)} /></Field>
-          <Field label="ขนาด (kWp DC)"><input type="number" step="0.01" className={inCls} value={kwp} onChange={(e) => setKwp(+e.target.value || 0)} /></Field>
-          <Field label="วัตต์/แผง"><input type="number" className={inCls} value={panelW} onChange={(e) => setPanelW(+e.target.value || 1)} /></Field>
+          <Field label="ขนาดแผง (Wp)"><input type="number" className={inCls} value={panelW} onChange={(e) => setPanelW(+e.target.value || 1)} /></Field>
+          <Field label="จำนวนแผง"><input type="number" className={inCls} value={panelCount} onChange={(e) => setPanelCount(+e.target.value || 1)} /></Field>
           <Field label="เฟส"><select className={inCls} value={phase} onChange={(e) => setPhase(+e.target.value)}><option value={1}>1 เฟส</option><option value={3}>3 เฟส</option></select></Field>
+          <Field label="แบตเตอรี่ (kWh)"><input type="number" step="7" className={inCls} value={batteryKwh} onChange={(e) => setBatteryKwh(+e.target.value || 0)} /></Field>
+          <Field label="ประกัน (ปี)"><select className={inCls} value={warranty} onChange={(e) => setWarranty(+e.target.value)}><option value={15}>15</option><option value={20}>20</option><option value={25}>25</option></select></Field>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Field label="แผง ฿/W"><input type="number" step="0.1" className={inCls} value={cPanel} onChange={(e) => setCPanel(+e.target.value || 0)} /></Field>
-          <Field label="อินเวอร์เตอร์ ฿/W"><input type="number" step="0.1" className={inCls} value={cInv} onChange={(e) => setCInv(+e.target.value || 0)} /></Field>
-          <Field label="BOS/Combiner ฿/W"><input type="number" step="0.1" className={inCls} value={cBos} onChange={(e) => setCBos(+e.target.value || 0)} /></Field>
-          <Field label="ติดตั้ง/Permit ฿/W"><input type="number" step="0.1" className={inCls} value={cLabor} onChange={(e) => setCLabor(+e.target.value || 0)} /></Field>
+        <label className="flex items-center gap-2 text-sm text-[#1d1d1f] mt-3">
+          <input type="checkbox" checked={backup} onChange={(e) => setBackup(e.target.checked)} className="w-4 h-4 accent-[#F5821F]" />
+          ต้องการ Backup ตอนไฟดับ (เพิ่ม Backup Box)
+        </label>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 pt-4 border-t border-[#f0f0f2]">
+          <div className="bg-[#f5f5f7] rounded-lg p-3"><div className="text-lg font-bold text-[#1d1d1f]">{dcKwp.toFixed(2)}</div><div className="text-[11px] text-[#6e6e73]">DC kWp</div></div>
+          <div className="bg-[#f5f5f7] rounded-lg p-3"><div className="text-lg font-bold text-[#1d1d1f]">{acKwac.toFixed(2)}</div><div className="text-[11px] text-[#6e6e73]">AC kWac</div></div>
+          <div className="bg-[#f5f5f7] rounded-lg p-3"><div className="text-lg font-bold text-[#F5821F]">{dcac.toFixed(2)}</div><div className="text-[11px] text-[#6e6e73]">DC/AC ratio</div></div>
+          <div className="bg-[#f5f5f7] rounded-lg p-3"><div className="text-lg font-bold text-[#1d1d1f]">{inv}</div><div className="text-[11px] text-[#6e6e73]">MI-1250 (ชุด)</div></div>
         </div>
       </div>
 
+      {/* 2) BOM Atmoce + ต้นทุนส่วนเพิ่ม */}
+      <div className="grid md:grid-cols-2 gap-5 mb-5">
+        <div className="card p-5">
+          <div className="font-semibold text-[#1d1d1f] mb-3">2) อุปกรณ์ Atmoce (auto จาก Price List)</div>
+          <table className="w-full text-[13px]">
+            <thead><tr className="text-[#a1a1a6] text-[11px]"><th className="text-left py-1">SKU</th><th className="text-right">จำนวน</th><th className="text-right">ราคา/หน่วย</th><th className="text-right">รวม</th></tr></thead>
+            <tbody>
+              {bom.map((x, i) => (
+                <tr key={i} className="border-b border-[#f4f4f6]"><td className="py-1.5">{x.sku}<div className="text-[10px] text-[#a1a1a6]">{x.desc}</div></td><td className="text-right">{x.q}</td><td className="text-right text-[#6e6e73]">{int(x.p)}</td><td className="text-right">{int(x.q * x.p)}</td></tr>
+              ))}
+              <tr className="font-semibold"><td className="py-1.5" colSpan={3}>รวมอุปกรณ์ Atmoce</td><td className="text-right text-[#F5821F]">{int(atmoceTotal)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="card p-5">
+          <div className="font-semibold text-[#1d1d1f] mb-3">3) ต้นทุนส่วนเพิ่ม (แก้ได้)</div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="แผงโซลาร์ ฿/W"><input type="number" step="0.1" className={inCls} value={panelBahtW} onChange={(e) => setPanelBahtW(+e.target.value || 0)} /></Field>
+            <Field label="Mounting ฿/W"><input type="number" step="0.1" className={inCls} value={cMount} onChange={(e) => setCMount(+e.target.value || 0)} /></Field>
+            <Field label="BOS/สาย/ท่อ/กราวด์ ฿/W"><input type="number" step="0.1" className={inCls} value={cBos} onChange={(e) => setCBos(+e.target.value || 0)} /></Field>
+            <Field label="ติดตั้ง ฿/W"><input type="number" step="0.1" className={inCls} value={cInstall} onChange={(e) => setCInstall(+e.target.value || 0)} /></Field>
+            <Field label="Service (บาท)"><input type="number" step="1000" className={inCls} value={service} onChange={(e) => setService(+e.target.value || 0)} /></Field>
+            <Field label="Permit (บาท)"><input type="number" step="1000" className={inCls} value={permit} onChange={(e) => setPermit(+e.target.value || 0)} /></Field>
+          </div>
+        </div>
+      </div>
+
+      {/* 4) กำไร + ส่วนลด + สรุป */}
       <div className="grid md:grid-cols-2 gap-5 mb-6">
         <div className="card p-5">
-          <div className="font-semibold text-[#1d1d1f] mb-3">2) กำไร + ส่วนลด</div>
+          <div className="font-semibold text-[#1d1d1f] mb-3">4) กำไร + ส่วนลด</div>
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <Field label={`กำไร (%) — ปรับได้`}><input type="number" step="1" className={inCls} value={margin} onChange={(e) => setMargin(+e.target.value || 0)} /></Field>
+            <Field label="กำไร (%) — ปรับได้"><input type="number" className={inCls} value={margin} onChange={(e) => setMargin(+e.target.value || 0)} /></Field>
             <Field label="ส่วนลด (บาท ก่อน VAT)"><input type="number" step="100" className={inCls} value={discount} onChange={(e) => setDiscount(+e.target.value || 0)} /></Field>
           </div>
           <label className="flex items-center gap-2 text-sm text-[#1d1d1f]">
             <input type="checkbox" checked={roundNet} onChange={(e) => setRoundNet(e.target.checked)} className="w-4 h-4 accent-[#F5821F]" />
             ปัดยอดรวมทั้งสิ้น (รวม VAT) เป็นเลขเน็ท หลักร้อย
           </label>
-          <div className="mt-3 text-xs text-[#6e6e73]">แผง {panels} แผง · อินเวอร์เตอร์ {inverters} ชุด · กำไรจริง <b className="text-[#F5821F]">{marginActual.toFixed(1)}%</b> · ฿{perW.toFixed(2)}/W</div>
+          <div className="mt-3 text-xs text-[#6e6e73]">ต้นทุน ฿{(totalCost / W).toFixed(2)}/W · ราคาขาย <b className="text-[#F5821F]">฿{perW.toFixed(2)}/W</b></div>
         </div>
 
         <div className="card p-5">
-          <div className="font-semibold text-[#1d1d1f] mb-3">3) สรุปราคา</div>
-          <table className="w-full text-sm">
-            <tbody>
-              {items.map((x) => (
-                <tr key={x.k} className="text-[#6e6e73]"><td className="py-0.5">{x.k}</td><td className="text-right">{int(Math.round(x.v))}</td></tr>
-              ))}
-              <tr className="border-t border-[#eee] font-medium"><td className="py-1">ต้นทุนรวม</td><td className="text-right">{int(Math.round(totalCost))}</td></tr>
-              <tr><td className="py-0.5">+ กำไร {margin}%</td><td className="text-right">{int(Math.round(priceBeforeDiscount - totalCost))}</td></tr>
-              <tr><td className="py-0.5">ราคา (ก่อนส่วนลด)</td><td className="text-right">{num(priceBeforeDiscount)}</td></tr>
-              <tr className="text-[#c0392b]"><td className="py-0.5">ส่วนลดพิเศษ</td><td className="text-right">{shownDiscount > 0 ? "-" + num(shownDiscount) : "-"}</td></tr>
-              <tr className="font-medium"><td className="py-1">รวมราคา (ก่อน VAT)</td><td className="text-right">{num(preVat)}</td></tr>
-              <tr><td className="py-0.5">VAT 7%</td><td className="text-right">{num(vat)}</td></tr>
-              <tr className="border-t border-[#1d1d1f] font-bold text-[#1d1d1f]"><td className="py-1">รวมทั้งสิ้น</td><td className="text-right text-[#F5821F]">{int(grand)}</td></tr>
-            </tbody>
-          </table>
+          <div className="font-semibold text-[#1d1d1f] mb-3">สรุปราคา</div>
+          <table className="w-full text-sm"><tbody>
+            <tr className="text-[#6e6e73]"><td className="py-0.5">อุปกรณ์ Atmoce</td><td className="text-right">{int(atmoceTotal)}</td></tr>
+            <tr className="text-[#6e6e73]"><td className="py-0.5">แผงโซลาร์</td><td className="text-right">{int(Math.round(panelCost))}</td></tr>
+            <tr className="text-[#6e6e73]"><td className="py-0.5">Mounting + BOS + ติดตั้ง</td><td className="text-right">{int(Math.round(mounting + bos + install))}</td></tr>
+            <tr className="text-[#6e6e73]"><td className="py-0.5">Service + Permit</td><td className="text-right">{int(service + permit)}</td></tr>
+            <tr className="border-t border-[#eee] font-medium"><td className="py-1">ต้นทุนรวม</td><td className="text-right">{int(Math.round(totalCost))}</td></tr>
+            <tr><td className="py-0.5">+ กำไร {margin}%</td><td className="text-right">{int(Math.round(priceBeforeDiscount - totalCost))}</td></tr>
+            <tr className="text-[#c0392b]"><td className="py-0.5">ส่วนลดพิเศษ</td><td className="text-right">{shownDiscount > 0 ? "-" + num(shownDiscount) : "-"}</td></tr>
+            <tr className="font-medium"><td className="py-1">รวมราคา (ก่อน VAT)</td><td className="text-right">{num(preVat)}</td></tr>
+            <tr><td className="py-0.5">VAT 7%</td><td className="text-right">{num(vat)}</td></tr>
+            <tr className="border-t border-[#1d1d1f] font-bold"><td className="py-1">รวมทั้งสิ้น</td><td className="text-right text-[#F5821F]">{int(grand)}</td></tr>
+          </tbody></table>
         </div>
       </div>
 
-      {/* ==== เทมเพลตใบเสนอราคา ==== */}
+      {/* เทมเพลตใบเสนอราคา */}
       <div className="font-semibold text-[#1d1d1f] mb-2">เทมเพลตใบเสนอราคา (ตัวอย่าง)</div>
       <div className="bg-white border border-[#d2d2d7] rounded-xl p-8 text-[#1d1d1f]" style={{ fontSize: 13 }}>
-        {/* Proposal / Executive summary */}
         <div className="flex items-start justify-between mb-4">
           <div>
             <div className="font-bold text-lg tracking-wide">M POWER <span className="text-[#F5821F]">NATURE ENERGY</span></div>
@@ -183,7 +251,7 @@ export default function QuotePage() {
         </div>
 
         <div className="grid grid-cols-4 gap-3 bg-[#f5f5f7] rounded-lg p-3 mb-4 text-[12px]">
-          <div><div className="text-[#6e6e73]">ขนาดระบบ</div><div className="font-semibold">{kwp} kWp · {phase} เฟส</div></div>
+          <div><div className="text-[#6e6e73]">ขนาดระบบ</div><div className="font-semibold">{dcKwp.toFixed(2)} kWp · {phase} เฟส</div></div>
           <div><div className="text-[#6e6e73]">ผลิตไฟ/ปี</div><div className="font-semibold">{int(annualKwh)} kWh</div></div>
           <div><div className="text-[#6e6e73]">ประหยัด/ปี</div><div className="font-semibold text-[#1a7d3a]">{int(savingYr)} ฿</div></div>
           <div><div className="text-[#6e6e73]">คืนทุน</div><div className="font-semibold text-[#F5821F]">{payback} ปี</div></div>
@@ -200,7 +268,7 @@ export default function QuotePage() {
           <thead><tr className="text-[#6e6e73] text-[11px]"><th className="text-left py-1.5">รายละเอียด</th><th className="text-center">จำนวน</th><th className="text-right">ราคา/หน่วย</th><th className="text-right">จำนวนเงิน</th></tr></thead>
           <tbody>
             <tr className="border-t border-[#f0f0f2]">
-              <td className="py-2 font-medium">ค่าอุปกรณ์ระบบผลิตไฟฟ้าจากพลังงานแสงอาทิตย์ ขนาด {kwp} kW</td>
+              <td className="py-2 font-medium">ค่าอุปกรณ์ระบบผลิตไฟฟ้าจากพลังงานแสงอาทิตย์ ขนาด {dcKwp.toFixed(2)} kW</td>
               <td className="text-center">1 ชุด</td><td className="text-right">{num(afterDiscount)}</td><td className="text-right">{num(afterDiscount)}</td>
             </tr>
             {subItems.map((s, i) => (
@@ -214,15 +282,13 @@ export default function QuotePage() {
         </table>
 
         <div className="flex justify-end mt-3">
-          <table className="text-[12px] w-72">
-            <tbody>
-              <tr><td className="py-0.5 text-[#6e6e73]">ราคา</td><td className="text-right">{num(priceBeforeDiscount)}</td></tr>
-              <tr><td className="py-0.5 text-[#6e6e73]">ส่วนลดพิเศษ</td><td className="text-right text-[#c0392b]">{shownDiscount > 0 ? "-" + num(shownDiscount) : "-"}</td></tr>
-              <tr><td className="py-0.5 text-[#6e6e73]">รวมราคา</td><td className="text-right">{num(preVat)}</td></tr>
-              <tr><td className="py-0.5 text-[#6e6e73]">ภาษีมูลค่าเพิ่ม 7%</td><td className="text-right">{num(vat)}</td></tr>
-              <tr className="border-t border-[#1d1d1f] font-bold"><td className="py-1">รวมราคาทั้งสิ้น</td><td className="text-right">{int(grand)}.00</td></tr>
-            </tbody>
-          </table>
+          <table className="text-[12px] w-72"><tbody>
+            <tr><td className="py-0.5 text-[#6e6e73]">ราคา</td><td className="text-right">{num(priceBeforeDiscount)}</td></tr>
+            <tr><td className="py-0.5 text-[#6e6e73]">ส่วนลดพิเศษ</td><td className="text-right text-[#c0392b]">{shownDiscount > 0 ? "-" + num(shownDiscount) : "-"}</td></tr>
+            <tr><td className="py-0.5 text-[#6e6e73]">รวมราคา</td><td className="text-right">{num(preVat)}</td></tr>
+            <tr><td className="py-0.5 text-[#6e6e73]">ภาษีมูลค่าเพิ่ม 7%</td><td className="text-right">{num(vat)}</td></tr>
+            <tr className="border-t border-[#1d1d1f] font-bold"><td className="py-1">รวมราคาทั้งสิ้น</td><td className="text-right">{int(grand)}.00</td></tr>
+          </tbody></table>
         </div>
         <div className="text-center text-[12px] text-[#6e6e73] mt-2 mb-4">( {bahtText(grand)} )</div>
 
