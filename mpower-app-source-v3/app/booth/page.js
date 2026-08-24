@@ -37,7 +37,7 @@ function today() {
 // ประเมินแพคเกจ + ประหยัด + คืนทุน แบบคร่าวๆ จากค่าไฟ
 function recommend(f) {
   const bill = +f.bill || 0;
-  const pkg = bill >= 10000 ? PACKAGES[3] : bill >= 6000 ? PACKAGES[2] : bill >= 3000 ? PACKAGES[1] : PACKAGES[0];
+  const pkg = bill >= 10500 ? PACKAGES[3] : bill >= 8000 ? PACKAGES[2] : bill >= 5500 ? PACKAGES[1] : PACKAGES[0];
   const base = f.usage === "day" ? 0.7 : f.usage === "evening" ? 0.45 : 0.58;
   const bonus = f.battery === "yes" && f.usage !== "day" ? 0.15 : 0;
   const frac = Math.min(0.8, base + bonus);
