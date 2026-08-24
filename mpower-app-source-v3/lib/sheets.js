@@ -61,7 +61,8 @@ async function api(path, opt = {}) {
 const A1 = (tab, range) => encodeURIComponent(`${tab}!${range}`);
 
 // อ่านทั้งแท็บ → { headers, rows:[{...ค่าตามหัวคอลัมน์, _row}] }
-export async function getRows(tab, headerRow = 1) {
+// หมายเหตุ: ชีต MPOWER_DATABASE มีแถว 1 เป็นโน้ต หัวตารางจริงอยู่แถว 2 → default = 2
+export async function getRows(tab, headerRow = 2) {
   const j = await api(`/values/${A1(tab, "A1:ZZ")}`);
   const vals = j.values || [];
   const headers = vals[headerRow - 1] || [];
