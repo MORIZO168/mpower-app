@@ -8,6 +8,7 @@ const NAV = [
   { href: "/projects", label: "โครงการ", icon: "M4 6h16M4 6v12h16V6M4 10h6M4 14h4" },
   { href: "/impact", label: "ผลกระทบ / โชว์ลูกค้า", icon: "M12 3v18M5 21c0-6 3-9 7-9M19 21c0-4-2-6-5-6M12 3c2 2 3 4 3 6" },
   { href: "/leads", label: "ลูกค้า / A-Card", icon: "M3 5h18M3 12h18M3 19h12" },
+  { href: "/booth", label: "บูธ / งานอีเวนต์", icon: "M4 7h16v13H4zM4 7l2-4h12l2 4M9 12h6" },
   { href: "/inbox", label: "อินบ็อกซ์รวม (ทุกช่อง)", icon: "M4 4h16v12H5.2L4 17.5zM8 9h8M8 12h5" },
   { href: "/assistant", label: "ผู้ช่วย AI", icon: "M12 2a5 5 0 015 5v1a5 5 0 01-10 0V7a5 5 0 015-5zM4 21c0-4 4-6 8-6s8 2 8 6" },
   { href: "/survey", label: "สำรวจหน้างาน", icon: "M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7zM12 11a2 2 0 100-4 2 2 0 000 4z" },
