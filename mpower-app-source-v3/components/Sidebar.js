@@ -29,6 +29,9 @@ const NAV = [
     { href: "/pea", label: "ขอขนานไฟ (PEA)", icon: "M13 2L3 14h7l-1 8 10-12h-7z" },
     { href: "/handover", label: "ส่งมอบงาน", icon: "M9 12l2 2 4-4M7 3h10l4 4v14H3V7z" },
   ]},
+  { group: "บริการหลังการขาย", items: [
+    { href: "/service", label: "ดูแลหลังติดตั้ง (O&M)", icon: "M12 8v4l3 2M12 3a9 9 0 100 18 9 9 0 000-18" },
+  ]},
   { group: "จัดซื้อ & ทีมช่าง", items: [
     { href: "/supply", label: "Supply / สต็อก", icon: "M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10" },
     { href: "/subs", label: "ซับคอนแทรค", icon: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" },
