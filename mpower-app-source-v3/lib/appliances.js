@@ -1,5 +1,7 @@
 // ===== มาสเตอร์เครื่องใช้ไฟฟ้า (สำหรับสร้าง Load Profile) =====
-// w = กำลังไฟเฉลี่ยขณะทำงาน (วัตต์) · band ค่าเริ่มต้น: day(กลางวัน) / eve(หัวค่ำ) / night(กลางคืน)
+// w = กำลังไฟ "เฉลี่ยขณะทำงานจริง" (วัตต์) อ้างอิงเครื่องเบอร์ 5 / อินเวอร์เตอร์ ตลาดไทย
+// (แอร์อินเวอร์เตอร์กินไฟเฉลี่ยต่ำกว่าค่า BTU-rated เพราะ compressor ปรับรอบ)
+// band ค่าเริ่มต้น: day(กลางวัน) / eve(หัวค่ำ) / night(กลางคืน)
 
 export const BANDS = {
   day: { label: "กลางวัน 09–16 น.", note: "โซลาร์จ่ายตรง", tone: "#F5821F" },
@@ -8,14 +10,14 @@ export const BANDS = {
 };
 
 export const APPLIANCES = [
-  { id: "ac9", name: "แอร์ 9,000 BTU", w: 850, band: "eve", grp: "แอร์" },
-  { id: "ac12", name: "แอร์ 12,000 BTU", w: 1100, band: "eve", grp: "แอร์" },
-  { id: "ac18", name: "แอร์ 18,000 BTU", w: 1600, band: "eve", grp: "แอร์" },
-  { id: "ac24", name: "แอร์ 24,000 BTU", w: 2100, band: "eve", grp: "แอร์" },
-  { id: "ac36", name: "แอร์ 36,000 BTU", w: 3200, band: "day", grp: "แอร์" },
-  { id: "fridge", name: "ตู้เย็น (ทั่วไป)", w: 90, band: "night", grp: "ครัว" },
-  { id: "fridge2", name: "ตู้เย็น 2 ประตู / Side-by-side", w: 200, band: "night", grp: "ครัว" },
-  { id: "freezer", name: "ตู้แช่แข็ง", w: 350, band: "night", grp: "ครัว" },
+  { id: "ac9", name: "แอร์ 9,000 BTU (อินเวอร์เตอร์)", w: 750, band: "eve", grp: "แอร์" },
+  { id: "ac12", name: "แอร์ 12,000 BTU (อินเวอร์เตอร์)", w: 950, band: "eve", grp: "แอร์" },
+  { id: "ac18", name: "แอร์ 18,000 BTU (อินเวอร์เตอร์)", w: 1450, band: "eve", grp: "แอร์" },
+  { id: "ac24", name: "แอร์ 24,000 BTU (อินเวอร์เตอร์)", w: 1900, band: "eve", grp: "แอร์" },
+  { id: "ac36", name: "แอร์ 36,000 BTU", w: 3000, band: "day", grp: "แอร์" },
+  { id: "fridge", name: "ตู้เย็น 1 ประตู (เบอร์ 5)", w: 45, band: "night", grp: "ครัว" },
+  { id: "fridge2", name: "ตู้เย็น 2 ประตู / Side-by-side", w: 130, band: "night", grp: "ครัว" },
+  { id: "freezer", name: "ตู้แช่แข็ง", w: 300, band: "night", grp: "ครัว" },
   { id: "micro", name: "ไมโครเวฟ", w: 1000, band: "eve", grp: "ครัว" },
   { id: "rice", name: "หม้อหุงข้าว", w: 700, band: "eve", grp: "ครัว" },
   { id: "kettle", name: "กระติกน้ำร้อน", w: 800, band: "day", grp: "ครัว" },
