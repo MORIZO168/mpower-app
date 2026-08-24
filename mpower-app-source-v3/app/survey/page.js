@@ -158,8 +158,38 @@ export default function SurveyPage() {
       </div>
 
       <div className="card p-5 mb-4">
+        <div className="font-semibold text-[#1d1d1f] mb-3">5) เทคนิคหน้างาน <span className="text-[11px] font-normal text-[#a1a1a6]">— ใช้คิดสาย/กราวด์/แผนติดตั้ง</span></div>
+        <div className="grid md:grid-cols-3 gap-3">
+          <div><Lbl>ความยาวสาย DC (แผง→อินเวอร์เตอร์) ม.</Lbl><input type="number" className={inCls} placeholder="เช่น 25" /></div>
+          <div><Lbl>ความยาวสาย AC (อินเวอร์เตอร์→ตู้ MDB) ม.</Lbl><input type="number" className={inCls} placeholder="เช่น 15" /></div>
+          <div><Lbl>ระยะ ตู้ MDB → มิเตอร์ ม.</Lbl><input type="number" className={inCls} placeholder="เช่น 8" /></div>
+          <div><Lbl>จุดวางอินเวอร์เตอร์</Lbl>
+            <select className={inCls} defaultValue=""><option value="" disabled>เลือก…</option>{["ผนังในบ้าน (ในร่ม)", "โรงจอดรถ", "ระเบียง/ชายคา", "ห้องไฟฟ้า", "ผนังนอก (มีกันแดดฝน)"].map((t) => <option key={t}>{t}</option>)}</select>
+          </div>
+          <div><Lbl>จุดวางแบตเตอรี่ (ถ้ามี)</Lbl><input className={inCls} placeholder="เช่น ข้างอินเวอร์เตอร์ / ในร่ม ระบายอากาศ" /></div>
+          <div><Lbl>มีระบบกราวด์เดิมไหม</Lbl>
+            <select className={inCls} defaultValue=""><option value="" disabled>เลือก…</option>{["มี — ใช้ร่วมได้", "มี — แต่ต้องปักเพิ่ม", "ไม่มี — ต้องปักใหม่"].map((t) => <option key={t}>{t}</option>)}</select>
+          </div>
+          <div><Lbl>ตำแหน่ง/ระยะปักกราวด์</Lbl><input className={inCls} placeholder="เช่น ข้างตู้ MDB ~3 ม." /></div>
+          <div><Lbl>ขนาดเมนเบรกเกอร์ (A)</Lbl><input type="number" className={inCls} placeholder="เช่น 100" /></div>
+          <div><Lbl>ช่องว่างในตู้ MDB (ช่อง)</Lbl><input type="number" className={inCls} placeholder="เช่น 2" /></div>
+          <div><Lbl>ความสูงอาคาร / จำนวนชั้น</Lbl>
+            <select className={inCls} defaultValue=""><option value="" disabled>เลือก…</option>{["1 ชั้น", "2 ชั้น", "3 ชั้น", "มากกว่า 3 ชั้น"].map((t) => <option key={t}>{t}</option>)}</select>
+          </div>
+          <div><Lbl>การเข้าถึง / รถเครน</Lbl>
+            <select className={inCls} defaultValue=""><option value="" disabled>เลือก…</option>{["รถเครนเข้าได้ถึงหน้างาน", "รถเข้าได้แต่ต้องแบกต่อ", "เข้าซอยแคบ/แบกไกล", "ต้องใช้นั่งร้าน/โรยตัว"].map((t) => <option key={t}>{t}</option>)}</select>
+          </div>
+          <div><Lbl>เงา/สิ่งกีดขวาง</Lbl><input className={inCls} placeholder="เช่น ต้นไม้ทิศตะวันตก, ถังน้ำ" /></div>
+          <div><Lbl>WiFi หน้างาน (สำหรับ monitoring)</Lbl>
+            <select className={inCls} defaultValue=""><option value="" disabled>เลือก…</option>{["มี WiFi", "ใช้ซิม/4G", "ไม่มีเน็ต"].map((t) => <option key={t}>{t}</option>)}</select>
+          </div>
+          <div><Lbl>ผู้ติดต่อหน้างาน + เวลาเข้าได้</Lbl><input className={inCls} placeholder="เช่น คุณเอก 09:00–17:00" /></div>
+        </div>
+      </div>
+
+      <div className="card p-5 mb-4">
         <div className="flex items-center mb-1">
-          <div className="font-semibold text-[#1d1d1f]">5) รูปหน้างาน <span className="text-[11px] font-normal text-[#a1a1a6]">— ถ่ายจากมือถือได้ทันที · แยกหมวดกันตกหล่น</span></div>
+          <div className="font-semibold text-[#1d1d1f]">6) รูปหน้างาน <span className="text-[11px] font-normal text-[#a1a1a6]">— ถ่ายจากมือถือได้ทันที · แยกหมวดกันตกหล่น</span></div>
           <div className="ml-auto text-xs text-[#6e6e73]">จำเป็น <b className={reqDone === reqCats.length ? "text-[#1a7d3a]" : "text-[#F5821F]"}>{reqDone}/{reqCats.length}</b> · รวม {totalShots} รูป</div>
         </div>
         <div className="grid sm:grid-cols-2 gap-3 mt-3">
