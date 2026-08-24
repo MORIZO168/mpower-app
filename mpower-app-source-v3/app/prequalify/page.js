@@ -34,14 +34,15 @@ export default function PreQualifyPage() {
   rows.forEach((r) => (band[r.band] += kwh(r)));
   const totalDay = band.day + band.eve + band.night;
 
-  const recKwp = Math.max(0.66, band.day / SUN_HOURS * 1.1);
-  const panels = Math.ceil((recKwp * 1000) / PANEL_W);
-  const actualKwp = (panels * PANEL_W) / 1000;
-  const dailyProd = actualKwp * SUN_HOURS;
-
   const battTarget = batteryPref === "eve_night" ? band.eve + band.night : batteryPref === "night" ? band.night : 0;
   const battModules = battTarget > 0 ? Math.max(1, Math.round(battTarget / BATT_UNIT)) : 0;
   const battKwh = battModules * BATT_UNIT;
+
+  // ระบบต้องผลิตพอ = ใช้กลางวัน + ชาร์จแบตไว้ใช้ตอนเย็น/คืน (×1.1 เผื่อสูญเสีย)
+  const recKwp = Math.max(0.66, ((band.day + battTarget) / SUN_HOURS) * 1.1);
+  const panels = Math.ceil((recKwp * 1000) / PANEL_W);
+  const actualKwp = (panels * PANEL_W) / 1000;
+  const dailyProd = actualKwp * SUN_HOURS;
 
   const monthlySave = Math.round((dailyProd + Math.min(battKwh, band.eve + band.night)) * 30 * 4.2);
   const pct = (v) => (totalDay ? Math.round((v / totalDay) * 100) : 0);
@@ -147,7 +148,7 @@ export default function PreQualifyPage() {
           <div className="card p-5 text-[12px] text-[#6e6e73] leading-relaxed">
             <div className="font-semibold text-[#1d1d1f] mb-1 text-sm">อ้างอิงการคำนวณ</div>
             แดดเต็ม {SUN_HOURS} ชม./วัน · แผง {PANEL_W}W · แบตก้อนละ {BATT_UNIT} kWh<br />
-            ขนาดระบบคิดจากโหลดกลางวัน ×1.1 เพื่อเผื่อสูญเสีย · ปรับ วัตต์/ชม./ช่วงเวลา ได้ ตัวเลขอัปเดตทันที
+            ขนาดระบบคิดจาก โหลดกลางวัน + พลังงานที่ต้องชาร์จแบต ×1.1 · ปรับ วัตต์/ชม./ช่วงเวลา ได้ ตัวเลขอัปเดตทันที
           </div>
 
           <button className="w-full bg-[#1d1d1f] text-white rounded-lg px-6 py-2.5 text-sm font-semibold">ส่งต่อ → ใบเสนอราคา (Quote)</button>
