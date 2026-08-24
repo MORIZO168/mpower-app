@@ -19,6 +19,7 @@ const NAV = [
   { href: "/subs", label: "ซับคอนแทรค", icon: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" },
   { href: "/supply", label: "Supply / สต็อก", icon: "M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10" },
   { href: "/pipeline", label: "Pipeline งาน", icon: "M4 6h16M4 12h10M4 18h6" },
+  { href: "/workorder", label: "ใบสั่งงาน + นัดติดตั้ง", icon: "M9 11l3 3 8-8M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9" },
   { href: "/pea", label: "ขอขนานไฟ (PEA)", icon: "M13 2L3 14h7l-1 8 10-12h-7z" },
   { href: "/handover", label: "ส่งมอบงาน", icon: "M9 12l2 2 4-4M7 3h10l4 4v14H3V7z" },
   { href: "/forecast", label: "Forecast", icon: "M4 19l5-5 4 4 7-8M14 6h4v4" },
@@ -71,7 +72,7 @@ export default function Sidebar() {
       <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col bg-white border-r border-[#e8e8ed] text-[#1d1d1f]">
         <div className="px-5 py-5 flex items-center gap-2.5 border-b border-[#f0f0f2]"><Brand /></div>
         <nav className="flex-1 py-3 overflow-y-auto"><NavItems path={path} /></nav>
-        <div className="px-5 py-3 border-t border-[#f0f0f2] text-[11px] text-[#a1a1a6]">v0.7 · ต่อ Google Sheets</div>
+        <div className="px-5 py-3 border-t border-[#f0f0f2] text-[11px] text-[#a1a1a6]">v0.8 · ต่อ Google Sheets</div>
       </aside>
 
       {/* Mobile top bar */}
@@ -95,7 +96,7 @@ export default function Sidebar() {
               </button>
             </div>
             <nav className="flex-1 py-3 overflow-y-auto"><NavItems path={path} onNav={() => setOpen(false)} /></nav>
-            <div className="px-5 py-3 border-t border-[#f0f0f2] text-[11px] text-[#a1a1a6]">v0.7 · ต่อ Google Sheets</div>
+            <div className="px-5 py-3 border-t border-[#f0f0f2] text-[11px] text-[#a1a1a6]">v0.8 · ต่อ Google Sheets</div>
           </aside>
         </div>
       )}
