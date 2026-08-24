@@ -1,47 +1,109 @@
-// ตัวเชื่อม Google Sheets (ฝั่ง server เท่านั้น)
-// ตั้ง env 3 ตัวใน Vercel:
-//   GOOGLE_SA_EMAIL        = client_email ของ service account
-//   GOOGLE_SA_KEY          = private_key (ทั้งก้อน รวม \n)
-//   MPOWER_SHEET_ID        = id ของ Google Sheet
-//
-// ถ้ายังไม่ตั้ง env → isSheetsConfigured() = false → หน้าเว็บใช้ mock ใน lib/data.js ไปก่อน
+// ===== Google Sheets connector (ปลอดภัย: ID-keyed + header-mapped + read-back verify) =====
+// ไม่พึ่ง npm package — เซ็น JWT ด้วย Node crypto เอง แล้วเรียก Sheets REST API
+// ต้องตั้ง env บน Vercel: GOOGLE_SA_EMAIL, GOOGLE_SA_KEY, MPOWER_SHEET_ID
 
-export function isSheetsConfigured() {
-  return !!(process.env.GOOGLE_SA_EMAIL && process.env.GOOGLE_SA_KEY && process.env.MPOWER_SHEET_ID);
+import crypto from "crypto";
+
+const SHEET_ID = process.env.MPOWER_SHEET_ID;
+const SA_EMAIL = process.env.GOOGLE_SA_EMAIL;
+const SA_KEY = (process.env.GOOGLE_SA_KEY || "").split(String.fromCharCode(92) + "n").join(String.fromCharCode(10));
+
+export function isConfigured() {
+  return !!(SHEET_ID && SA_EMAIL && SA_KEY);
 }
 
-// อ่านช่วงข้อมูลจากชีต (เช่น "Funnel!A1:E20") — คืน array ของ object โดยใช้แถวแรกเป็น header
-export async function readSheet(range) {
-  if (!isSheetsConfigured()) throw new Error("ยังไม่ได้ตั้งค่า Google Sheets env");
-  const { google } = await import("googleapis"); // ติดตั้งด้วย: npm i googleapis
-  const auth = new google.auth.JWT(
-    process.env.GOOGLE_SA_EMAIL,
-    undefined,
-    process.env.GOOGLE_SA_KEY.replace(/\\n/g, "\n"),
-    ["https://www.googleapis.com/auth/spreadsheets"]
-  );
-  const sheets = google.sheets({ version: "v4", auth });
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.MPOWER_SHEET_ID,
-    range,
-  });
-  const rows = res.data.values || [];
-  const header = rows.shift() || [];
-  return rows.map((r) => Object.fromEntries(header.map((h, i) => [h, r[i]])));
+function b64url(input) {
+  return Buffer.from(input).toString("base64").replace(/=+$/, "").split("+").join("-").split("/").join("_");
 }
 
-export async function appendRow(range, values) {
-  if (!isSheetsConfigured()) throw new Error("ยังไม่ได้ตั้งค่า Google Sheets env");
-  const { google } = await import("googleapis");
-  const auth = new google.auth.JWT(
-    process.env.GOOGLE_SA_EMAIL, undefined,
-    process.env.GOOGLE_SA_KEY.replace(/\\n/g, "\n"),
-    ["https://www.googleapis.com/auth/spreadsheets"]
-  );
-  const sheets = google.sheets({ version: "v4", auth });
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: process.env.MPOWER_SHEET_ID,
-    range, valueInputOption: "USER_ENTERED",
-    requestBody: { values: [values] },
+function colLetter(n) {
+  let s = "";
+  while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+  return s || "A";
+}
+
+let _token = null, _exp = 0;
+async function getToken() {
+  if (_token && Date.now() < _exp - 60000) return _token;
+  const now = Math.floor(Date.now() / 1000);
+  const header = b64url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const claim = b64url(JSON.stringify({
+    iss: SA_EMAIL,
+    scope: "https://www.googleapis.com/auth/spreadsheets",
+    aud: "https://oauth2.googleapis.com/token",
+    iat: now, exp: now + 3600,
+  }));
+  const unsigned = `${header}.${claim}`;
+  const sig = crypto.createSign("RSA-SHA256").update(unsigned).sign(SA_KEY);
+  const jwt = `${unsigned}.${b64url(sig)}`;
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: jwt }),
   });
+  const j = await res.json();
+  if (!j.access_token) throw new Error("auth failed: " + JSON.stringify(j).slice(0, 150));
+  _token = j.access_token; _exp = Date.now() + j.expires_in * 1000;
+  return _token;
+}
+
+async function api(path, opt = {}) {
+  const token = await getToken();
+  const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}${path}`, {
+    ...opt,
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(opt.headers || {}) },
+  });
+  const j = await res.json();
+  if (!res.ok) throw new Error(`Sheets ${res.status}: ${JSON.stringify(j).slice(0, 150)}`);
+  return j;
+}
+
+const A1 = (tab, range) => encodeURIComponent(`${tab}!${range}`);
+
+// อ่านทั้งแท็บ → { headers, rows:[{...ค่าตามหัวคอลัมน์, _row}] }
+export async function getRows(tab, headerRow = 1) {
+  const j = await api(`/values/${A1(tab, "A1:ZZ")}`);
+  const vals = j.values || [];
+  const headers = vals[headerRow - 1] || [];
+  const rows = [];
+  for (let i = headerRow; i < vals.length; i++) {
+    const obj = {};
+    headers.forEach((h, c) => { obj[h] = vals[i][c] ?? ""; });
+    obj._row = i + 1;
+    rows.push(obj);
+  }
+  return { headers, rows };
+}
+
+// เพิ่มแถวใหม่ (ต่อท้าย) — ตรวจ required + verify ว่าหาเจอด้วย idField
+export async function appendRow(tab, obj, { required = [], idField } = {}) {
+  for (const f of required) if (obj[f] === undefined || obj[f] === "") throw new Error(`ขาดฟิลด์จำเป็น: ${f}`);
+  const { headers } = await getRows(tab);
+  const arr = headers.map((h) => obj[h] ?? "");
+  await api(`/values/${A1(tab, "A1")}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, {
+    method: "POST", body: JSON.stringify({ values: [arr] }),
+  });
+  if (idField) {
+    const { rows } = await getRows(tab);
+    const found = rows.find((r) => r[idField] === obj[idField]);
+    if (!found) throw new Error("เขียนแล้วแต่ verify ไม่เจอ");
+    return found;
+  }
+  return true;
+}
+
+// อัปเดตตาม ID (หาแถวจาก idField เท่านั้น ไม่ใช้เลขแถวภายนอก) + read-back verify
+export async function updateRow(tab, idField, idValue, patch) {
+  const { headers, rows } = await getRows(tab);
+  const target = rows.find((r) => r[idField] === idValue);
+  if (!target) throw new Error(`ไม่พบ ${idField}=${idValue}`);
+  const merged = { ...target, ...patch };
+  const arr = headers.map((h) => merged[h] ?? "");
+  const rowNum = target._row;
+  const lastCol = colLetter(headers.length);
+  await api(`/values/${A1(tab, `A${rowNum}:${lastCol}${rowNum}`)}?valueInputOption=USER_ENTERED`, {
+    method: "PUT", body: JSON.stringify({ values: [arr] }),
+  });
+  const after = await getRows(tab);
+  return after.rows.find((r) => r[idField] === idValue);
 }
