@@ -1,12 +1,17 @@
 "use client";
 import { useState } from "react";
+import ProvinceInput from "@/components/ProvinceInput";
 
 const SOURCES = ["Facebook", "Instagram", "TikTok", "LINE", "Google", "แนะนำต่อ", "Walk-in", "อื่นๆ"];
 const TYPES = ["บ้าน", "ร้านค้า", "โรงงาน", "อื่นๆ"];
-const SYSTYPES = ["on-grid", "hybrid", "off-grid"];
-const GRADES = ["A", "B", "C"];
+const TIMEFRAMES = [
+  { v: "ภายใน 3 เดือน", g: "Hot" },
+  { v: "3-6 เดือน", g: "Warm" },
+  { v: "6 เดือนขึ้นไป", g: "Cool" },
+];
 const inCls = "w-full px-2.5 py-1.5 border border-[#d2d2d7] rounded-lg text-sm bg-white";
-const gradeTone = (g) => (g === "A" ? "ok" : g === "B" ? "warn" : "mut");
+const gradeTone = (g) => (g === "Hot" ? "bad" : g === "Warm" ? "warn" : g === "Cool" ? "mut" : "mut");
+const gradeFromTf = (tf) => (TIMEFRAMES.find((t) => t.v === tf) || {}).g || "";
 
 function nextId(rows) {
   const d = new Date();
@@ -19,7 +24,7 @@ function nextId(rows) {
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
 export default function LeadsClient({ rows = [], configured, error }) {
-  const empty = { Customer_Name: "", Phone_LINE: "", Source: "", Type: "", Province: "", Monthly_Bill_THB: "", Est_kWp: "", System_Type: "", Grade: "", Next_Action: "", Note: "" };
+  const empty = { Customer_Name: "", Phone_LINE: "", Source: "", Type: "", Province: "", Monthly_Bill_THB: "", Est_kWp: "", timeframe: "", battery: "", Next_Action: "", Note: "" };
   const [f, setF] = useState(empty);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -29,14 +34,23 @@ export default function LeadsClient({ rows = [], configured, error }) {
   async function submit() {
     if (!f.Customer_Name.trim()) { setMsg({ t: "bad", m: "กรอกชื่อลูกค้าก่อน" }); return; }
     setBusy(true); setMsg(null);
-    const obj = { ACard_ID: nextId(rows), Date: today(), ...f, Status: "new" };
+    const obj = {
+      ACard_ID: nextId(rows), Date: today(),
+      Customer_Name: f.Customer_Name, Phone_LINE: f.Phone_LINE, Source: f.Source, Type: f.Type,
+      Province: f.Province, Monthly_Bill_THB: f.Monthly_Bill_THB, Est_kWp: f.Est_kWp,
+      System_Type: f.battery === "สนใจ" ? "hybrid (มีแบต)" : f.battery === "ไม่สนใจ" ? "on-grid" : "",
+      Grade: gradeFromTf(f.timeframe),
+      Status: "new",
+      Next_Action: f.Next_Action,
+      Note: [f.timeframe && `ติดตั้ง: ${f.timeframe}`, f.battery && `แบต: ${f.battery}`, f.Note].filter(Boolean).join(" · "),
+    };
     try {
       const res = await fetch("/api/sheets", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "append", tab: "A-Card", obj, idField: "ACard_ID", required: ["Customer_Name"] }),
       });
       const d = await res.json();
-      if (d.ok) { setMsg({ t: "ok", m: `บันทึกแล้ว → ${obj.ACard_ID}` }); setF(empty); setTimeout(() => window.location.reload(), 900); }
+      if (d.ok) { setMsg({ t: "ok", m: `บันทึกแล้ว → ${obj.ACard_ID} (${obj.Grade})` }); setF(empty); setTimeout(() => window.location.reload(), 900); }
       else setMsg({ t: "bad", m: d.error || "บันทึกไม่สำเร็จ" });
     } catch (e) { setMsg({ t: "bad", m: String(e).slice(0, 120) }); }
     setBusy(false);
@@ -47,13 +61,13 @@ export default function LeadsClient({ rows = [], configured, error }) {
       <div className="flex items-center gap-3 mb-4">
         <div>
           <h1 className="text-xl font-bold text-[#1d1d1f]">ลูกค้า / A-Card</h1>
-          <p className="text-sm text-[#6e6e73] mt-0.5">รับ lead ทุกช่องทาง + เกรด · เชื่อม Google Sheet แท็บ A-Card</p>
+          <p className="text-sm text-[#6e6e73] mt-0.5">รับ lead · เกรด Hot/Warm/Cool จากกรอบเวลาติดตั้ง · เชื่อม Google Sheet</p>
         </div>
         <span className={`ml-auto pill pill-${configured ? "ok" : "mut"}`}>{configured ? "เชื่อม Sheet แล้ว" : "ยังไม่เชื่อม Sheet"}</span>
       </div>
 
       {error && <div className="card p-3 mb-4 text-sm text-[#c0392b]">อ่านชีตไม่สำเร็จ: {error}</div>}
-      {!configured && <div className="card p-3 mb-4 text-sm text-[#6e6e73]">ยังไม่ได้ตั้งค่า env — ตั้งค่าตามคู่มือก่อน ระบบจะดึงข้อมูลจริงอัตโนมัติ</div>}
+      {!configured && <div className="card p-3 mb-4 text-sm text-[#6e6e73]">ยังไม่ได้ตั้งค่า env — ตั้งค่าตามคู่มือก่อน</div>}
 
       <div className="card p-5 mb-4">
         <button onClick={() => setOpen((o) => !o)} className="bg-[#F5821F] text-white rounded-lg px-4 py-2 text-sm font-semibold">
@@ -66,14 +80,26 @@ export default function LeadsClient({ rows = [], configured, error }) {
               <div><label className="block text-[11px] text-[#6e6e73] mb-1">เบอร์ / LINE</label><input className={inCls} value={f.Phone_LINE} onChange={(e) => upd("Phone_LINE", e.target.value)} placeholder="08x-xxx-xxxx" /></div>
               <div><label className="block text-[11px] text-[#6e6e73] mb-1">ช่องทาง</label><select className={inCls} value={f.Source} onChange={(e) => upd("Source", e.target.value)}><option value="">เลือก…</option>{SOURCES.map((s) => <option key={s}>{s}</option>)}</select></div>
               <div><label className="block text-[11px] text-[#6e6e73] mb-1">ประเภท</label><select className={inCls} value={f.Type} onChange={(e) => upd("Type", e.target.value)}><option value="">เลือก…</option>{TYPES.map((s) => <option key={s}>{s}</option>)}</select></div>
-              <div><label className="block text-[11px] text-[#6e6e73] mb-1">จังหวัด</label><input className={inCls} value={f.Province} onChange={(e) => upd("Province", e.target.value)} /></div>
+              <div><label className="block text-[11px] text-[#6e6e73] mb-1">จังหวัด</label><ProvinceInput className={inCls} value={f.Province} onChange={(v) => upd("Province", v)} /></div>
               <div><label className="block text-[11px] text-[#6e6e73] mb-1">ค่าไฟ/เดือน (บาท)</label><input type="number" className={inCls} value={f.Monthly_Bill_THB} onChange={(e) => upd("Monthly_Bill_THB", e.target.value)} /></div>
+              <div>
+                <label className="block text-[11px] text-[#6e6e73] mb-1">สนใจติดตั้งเมื่อไหร่ → เกรด</label>
+                <select className={inCls} value={f.timeframe} onChange={(e) => upd("timeframe", e.target.value)}>
+                  <option value="">เลือก…</option>
+                  {TIMEFRAMES.map((t) => <option key={t.v} value={t.v}>{t.v} ({t.g})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] text-[#6e6e73] mb-1">สนใจแบตเตอรี่?</label>
+                <select className={inCls} value={f.battery} onChange={(e) => upd("battery", e.target.value)}>
+                  <option value="">เลือก…</option><option value="สนใจ">สนใจ (hybrid)</option><option value="ไม่สนใจ">ไม่สนใจ (on-grid)</option>
+                </select>
+              </div>
               <div><label className="block text-[11px] text-[#6e6e73] mb-1">ขนาดโดยประมาณ (kWp)</label><input type="number" className={inCls} value={f.Est_kWp} onChange={(e) => upd("Est_kWp", e.target.value)} /></div>
-              <div><label className="block text-[11px] text-[#6e6e73] mb-1">ประเภทระบบ</label><select className={inCls} value={f.System_Type} onChange={(e) => upd("System_Type", e.target.value)}><option value="">เลือก…</option>{SYSTYPES.map((s) => <option key={s}>{s}</option>)}</select></div>
-              <div><label className="block text-[11px] text-[#6e6e73] mb-1">เกรด</label><select className={inCls} value={f.Grade} onChange={(e) => upd("Grade", e.target.value)}><option value="">เลือก…</option>{GRADES.map((s) => <option key={s}>{s}</option>)}</select></div>
               <div className="md:col-span-2"><label className="block text-[11px] text-[#6e6e73] mb-1">ขั้นถัดไป</label><input className={inCls} value={f.Next_Action} onChange={(e) => upd("Next_Action", e.target.value)} placeholder="เช่น นัดสำรวจ / โทรกลับ" /></div>
               <div><label className="block text-[11px] text-[#6e6e73] mb-1">หมายเหตุ</label><input className={inCls} value={f.Note} onChange={(e) => upd("Note", e.target.value)} /></div>
             </div>
+            {f.timeframe && <div className="mt-2 text-[12px] text-[#6e6e73]">เกรดอัตโนมัติ: <span className={`pill pill-${gradeTone(gradeFromTf(f.timeframe))}`}>{gradeFromTf(f.timeframe)}</span></div>}
             <div className="flex items-center gap-3 mt-3">
               <button onClick={submit} disabled={busy} className="bg-[#1d1d1f] text-white rounded-lg px-5 py-2 text-sm font-semibold disabled:opacity-50">{busy ? "กำลังบันทึก…" : "บันทึกเข้า Sheet"}</button>
               {msg && <span className={`text-sm ${msg.t === "ok" ? "text-[#1a7d3a]" : "text-[#c0392b]"}`}>{msg.m}</span>}
