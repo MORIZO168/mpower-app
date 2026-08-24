@@ -197,7 +197,7 @@ export default function SurveyPage() {
             const n = photos[c.k] || 0;
             return (
               <label key={c.k} className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-colors ${n ? "border-[#1a7d3a] bg-[#f2faf4]" : c.req ? "border-[#F5821F] bg-[#fff8f1]" : "border-[#e2e2e7] bg-white"}`}>
-                <input type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={(e) => onPick(c.k, e.target.files)} />
+                <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => onPick(c.k, e.target.files)} />
                 <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${n ? "bg-[#1a7d3a] text-white" : "bg-[#f0f0f2] text-[#6e6e73]"}`}>
                   {n ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
@@ -207,7 +207,7 @@ export default function SurveyPage() {
                 </span>
                 <div className="min-w-0">
                   <div className="text-sm text-[#1d1d1f] leading-tight">{c.label} {c.req && <span className="text-[#F5821F]">*</span>}</div>
-                  <div className="text-[11px] text-[#a1a1a6]">{n ? `${n} รูป · แตะเพื่อเพิ่ม` : "แตะเพื่อถ่าย / เลือกรูป"}</div>
+                  <div className="text-[11px] text-[#a1a1a6]">{n ? `${n} รูป · แตะเพื่อเพิ่ม` : "แตะเพื่อถ่าย / เลือกจากอัลบั้ม"}</div>
                 </div>
               </label>
             );
