@@ -236,7 +236,7 @@ export default function PreQualifyPage() {
             แดดเต็ม {SUN_HOURS} ชม./วัน · แผง {PANEL_W}W · แบตก้อนละ {BATT_UNIT} kWh · ขนาดระบบ = (โหลดกลางวัน + ที่ชาร์จแบต) ÷ แดด × 1.1
           </div>
 
-          <button className="w-full bg-[#1d1d1f] text-white rounded-lg px-6 py-2.5 text-sm font-semibold">ส่งต่อ → ใบเสนอราคา (Quote)</button>
+          <button onClick={() => { try { localStorage.setItem("mpower_lp", JSON.stringify({ rows })); } catch (e) {} window.location.href = "/proposal"; }} className="w-full bg-[#1d1d1f] text-white rounded-lg px-6 py-2.5 text-sm font-semibold">ส่งต่อ → ทำใบเสนอ (Proposal)</button>
         </div>
       </div>
     </div>
