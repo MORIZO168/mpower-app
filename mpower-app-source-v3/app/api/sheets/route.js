@@ -2,7 +2,7 @@
 // GET  /api/sheets                → เช็คว่าตั้ง env แล้วหรือยัง
 // GET  /api/sheets?tab=A-Card     → อ่านตัวอย่างจากแท็บ (ทดสอบการเชื่อม)
 // POST /api/sheets  {action:"append"|"update", ...}
-import { isConfigured, getRows, appendRow, updateRow } from "@/lib/sheets";
+import { isConfigured, getRows, appendRow, updateRow, ensureTab } from "@/lib/sheets";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,6 +27,7 @@ export async function POST(req) {
     const b = await req.json();
     if (b.action === "append") return Response.json({ ok: true, row: await appendRow(b.tab, b.obj, { required: b.required, idField: b.idField }) });
     if (b.action === "update") return Response.json({ ok: true, row: await updateRow(b.tab, b.idField, b.idValue, b.patch) });
+    if (b.action === "ensureTab") return Response.json({ ok: true, result: await ensureTab(b.tab, b.headers, b.note) });
     return Response.json({ error: "action ต้องเป็น append หรือ update" }, { status: 400 });
   } catch (e) {
     return Response.json({ error: String(e).slice(0, 220) }, { status: 502 });
