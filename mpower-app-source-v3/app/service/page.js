@@ -11,10 +11,11 @@ export default async function ServicePage() {
   if (configured) {
     try {
       const r = await getRows("Installed_Base");
-      const rows = (r.rows || []).map(siteFromRow).filter((s) => s.id || (s.name && s.name !== "(ไม่มีชื่อ)"));
-      if (rows.length) { sites = rows; sample = false; }
+      sample = false; // แท็บมีอยู่แล้ว → โหมดจริง (เพิ่ม/แก้ได้ แม้ยังไม่มีข้อมูล)
+      sites = (r.rows || []).map(siteFromRow).filter((s) => s.id || (s.name && s.name !== "(ไม่มีชื่อ)"));
     } catch (e) {
-      error = String(e).slice(0, 180);
+      const m = String(e);
+      if (m.indexOf("Unable to parse range") < 0) error = m.slice(0, 180); // ไม่โชว์ error ตอนแค่ยังไม่มีแท็บ
     }
   }
   return <ServiceClient sites={sites} configured={configured} error={error} sample={sample} />;
