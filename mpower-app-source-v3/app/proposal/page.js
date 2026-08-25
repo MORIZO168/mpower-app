@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { PACKAGES, buildSystem, suggestPackage } from "@/lib/packages";
 import { summarize, recommend } from "@/lib/loadprofile";
 import LoadProfileChart from "@/components/LoadProfileChart";
+import usePackages from "@/components/usePackages";
 import { FLAT_RATE, TOU, BATT_EFF, DEGRADE, ESCALATION, DAYS, MONTHS_TH, SAMPLE_PROD } from "@/lib/tariff";
 
 const baht = (n) => "฿" + Math.round(n).toLocaleString("th-TH");
@@ -20,7 +21,8 @@ export default function ProposalPage() {
   const [backup, setBackup] = useState(false);
   const [warranty, setWarranty] = useState(15);
 
-  const sys = buildSystem(pkgId, { extraPanels, battCount, backup, warranty });
+  const pkgs = usePackages();
+  const sys = buildSystem(pkgId, { extraPanels, battCount, backup, warranty }, pkgs);
   const [annual, setAnnual] = useState(Math.round(sys.kwp * 1450));
 
   const [lp, setLp] = useState(null);
@@ -103,7 +105,7 @@ export default function ProposalPage() {
           <div><label className="block text-[11px] text-[#6e6e73] mb-1">ค่าไฟ/เดือน (฿)</label><input type="number" className={inCls} value={bill} onChange={(e) => setBill(+e.target.value || 0)} /></div>
           <div><label className="block text-[11px] text-[#6e6e73] mb-1">% ใช้ไฟกลางวัน</label><input type="number" className={inCls} value={pctDay} onChange={(e) => setPctDay(+e.target.value || 0)} /></div>
           <div><label className="block text-[11px] text-[#6e6e73] mb-1">แพคเกจ</label>
-            <select className={inCls} value={pkgId} onChange={(e) => { setPkgId(e.target.value); setAnnual(Math.round(buildSystem(e.target.value, { extraPanels, battCount, backup, warranty }).kwp * 1450)); }}>
+            <select className={inCls} value={pkgId} onChange={(e) => { setPkgId(e.target.value); setAnnual(Math.round(buildSystem(e.target.value, { extraPanels, battCount, backup, warranty }, pkgs).kwp * 1450)); }}>
               {PACKAGES.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
@@ -117,7 +119,7 @@ export default function ProposalPage() {
         </label>
         <div className="flex items-center gap-3 mt-3">
           <button onClick={() => window.print()} className="bg-[#1d1d1f] text-white rounded-lg px-5 py-2 text-sm font-semibold">🖨 พิมพ์ / เสนอลูกค้า (PDF)</button>
-          <span className="text-xs text-[#a1a1a6]">จากภาระไฟกลางวัน ~{f1(dayUse)} kWh/วัน แนะนำแพคเกจ {suggestPackage((dayUse / 4) * 1.1).name}</span>
+          <span className="text-xs text-[#a1a1a6]">จากภาระไฟกลางวัน ~{f1(dayUse)} kWh/วัน แนะนำแพคเกจ {suggestPackage((dayUse / 4) * 1.1, pkgs).name}</span>
         </div>
       </div>
 
