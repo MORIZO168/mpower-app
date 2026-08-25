@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import ProvinceInput from "@/components/ProvinceInput";
 import { CATALOG, AC_PRESETS, AC_DUTY, acRatedKw, rowPower, summarize, recommend, PANEL_W } from "@/lib/loadprofile";
 import { suggestPackage, ADDON } from "@/lib/packages";
+import usePackages from "@/components/usePackages";
 import LoadProfileChart from "@/components/LoadProfileChart";
 
 const BOOTH_URL = "https://mpower-system.vercel.app/booth";
@@ -81,8 +82,9 @@ export default function BoothPage() {
   // ===== ผลประเมิน 2 แบบ =====
   const recN = recommend(rows, "none");        // ไม่มีแบต
   const recB = recommend(rows, "off_night");    // มีแบต
-  const pkgN = suggestPackage(recN.kwp);
-  const pkgB = suggestPackage(recB.kwp);
+  const pkgs = usePackages();
+  const pkgN = suggestPackage(recN.kwp, pkgs);
+  const pkgB = suggestPackage(recB.kwp, pkgs);
   const priceN = pkgN.price;
   const priceB = pkgB.price + recB.battModules * ADDON.battery;
   const sm = summarize(rows);
