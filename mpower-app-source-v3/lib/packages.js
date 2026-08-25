@@ -21,15 +21,15 @@ export const PANEL_KWP = 0.65; // แผง 650W
 export const BATT_KWH = 7;
 
 // เลือกแพคเกจที่เหมาะจากขนาด kWp ที่ประเมิน (จาก Load Profile)
-export function suggestPackage(kwp) {
-  let best = PACKAGES[0];
-  for (const p of PACKAGES) if (kwp >= p.kwp - 1) best = p;
+export function suggestPackage(kwp, list = PACKAGES) {
+  let best = list[0];
+  for (const p of list) if (kwp >= p.kwp - 1) best = p;
   return best;
 }
 
 // สรุปสเปค+ราคาจากแพคเกจ + add-on
-export function buildSystem(pkgId, opt = {}) {
-  const p = PACKAGES.find((x) => x.id === pkgId) || PACKAGES[1];
+export function buildSystem(pkgId, opt = {}, list = PACKAGES) {
+  const p = list.find((x) => x.id === pkgId) || list[1];
   const extraPanels = opt.extraPanels || 0;
   const battCount = opt.battCount || 0;
   const backup = !!opt.backup;
@@ -53,4 +53,12 @@ export function buildSystem(pkgId, opt = {}) {
   if (warranty > 15) lines.push({ label: `+ ขยายประกัน ${warranty} ปี`, detail: "ไมโครอินเวอร์เตอร์", amount: warranty === 25 ? ADDON.war25 : ADDON.war20 });
 
   return { pkg: p, kwp, panels, inverter: p.inverter, battery, backup, warranty, price, lines };
+}
+
+// map แถวชีต <-> แพคเกจ (แท็บ Packages)
+export function rowToPackage(r) {
+  return { id: r.Pkg_ID, name: r.Name, kwp: +r.kWp || 0, panels: +r.Panels || 0, inverter: r.Inverter || "", price: +r.Price || 0, phase: +r.Phase || 1 };
+}
+export function packageToRow(p) {
+  return { Pkg_ID: p.id, Name: p.name, kWp: p.kwp, Panels: p.panels, Inverter: p.inverter, Price: p.price, Phase: p.phase };
 }
