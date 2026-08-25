@@ -108,3 +108,15 @@ export async function updateRow(tab, idField, idValue, patch) {
   const after = await getRows(tab);
   return after.rows.find((r) => r[idField] === idValue);
 }
+
+// สร้างแท็บใหม่ + ใส่หัวคอลัมน์ (แถว1 = โน้ต, แถว2 = headers) ถ้ายังไม่มีแท็บ
+export async function ensureTab(tab, headers, note) {
+  const meta = await api("?fields=sheets.properties.title");
+  const exists = (meta.sheets || []).some(function (s) { return s.properties && s.properties.title === tab; });
+  if (!exists) {
+    await api(":batchUpdate", { method: "POST", body: JSON.stringify({ requests: [{ addSheet: { properties: { title: tab } } }] }) });
+    const values = [[note || tab], headers];
+    await api("/values/" + A1(tab, "A1") + "?valueInputOption=USER_ENTERED", { method: "PUT", body: JSON.stringify({ values: values }) });
+  }
+  return { created: !exists, tab: tab };
+}
