@@ -43,6 +43,7 @@ const NAV = [
   { group: "การเงิน & ตั้งค่า", items: [
     { href: "/finance", label: "การเงิน", icon: "M3 6h18v12H3zM3 10h18M7 15h4" },
     { href: "/rates", label: "ตั้งค่าราคา", icon: "M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" },
+    { href: "/packages", label: "แพคเกจการขาย", icon: "M20 7l-8-4-8 4 8 4 8-4zM4 7v10l8 4 8-4V7M12 11v10" },
   ]},
 ];
 
