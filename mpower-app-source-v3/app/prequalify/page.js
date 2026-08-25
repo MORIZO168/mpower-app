@@ -4,6 +4,7 @@ import {
   CATALOG, AC_PRESETS, AC_DUTY, acRatedKw, acAvgKw, rowPower,
   summarize, recommend, SUN_HOURS, PANEL_W, BATT_UNIT, AC_EER,
 } from "@/lib/loadprofile";
+import LoadProfileChart from "@/components/LoadProfileChart";
 
 const fmt = (n) => Number(n || 0).toLocaleString("th-TH", { maximumFractionDigits: 1 });
 const fmt2 = (n) => Number(n || 0).toLocaleString("th-TH", { maximumFractionDigits: 2 });
@@ -194,18 +195,8 @@ export default function PreQualifyPage() {
         <div className="space-y-4">
           <div className="card p-4">
             <div className="font-semibold text-[#1d1d1f] mb-1">Load Profile · {fmt(rec.total)} kWh/วัน</div>
-            <div className="text-[11px] text-[#a1a1a6] mb-3">แท่งส้ม = ชั่วโมงที่แดดจ่ายตรง (9–16 น.)</div>
-            <div className="flex items-end gap-[2px] h-28">
-              {rec.h.map((v, i) => {
-                const solar = i >= 9 && i <= 15;
-                return (
-                  <div key={i} className="flex-1 flex flex-col justify-end" title={i + ":00 · " + fmt2(v) + " kWh"}>
-                    <div style={{ height: (v / maxH) * 100 + "%", background: solar ? "#F5821F" : "#c7c9cd" }} className="w-full rounded-t-[2px] min-h-[2px]" />
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex justify-between text-[9px] text-[#a1a1a6] mt-1"><span>0</span><span>6</span><span>12</span><span>18</span><span>23</span></div>
+            <div className="text-[11px] text-[#a1a1a6] mb-3">เส้นส้ม = ผลิตจากแดด (โค้งระฆัง) · เส้นดำ = การใช้ไฟของคุณ · ตรงที่ซ้อนกัน = ใช้แดดตรง</div>
+            <LoadProfileChart hours={rec.h} kwp={rec.kwp} height={140} />
             <div className="grid grid-cols-3 gap-2 mt-3 text-center">
               <div className="bg-[#fff8f1] rounded-lg p-2"><div className="text-[10px] text-[#6e6e73]">กลางวัน 9–16</div><div className="font-bold text-[#F5821F]">{fmt(rec.dayLoad)}</div></div>
               <div className="bg-[#f5f5f7] rounded-lg p-2"><div className="text-[10px] text-[#6e6e73]">นอกเวลาแดด</div><div className="font-bold text-[#1d1d1f]">{fmt(rec.offLoad)}</div></div>
