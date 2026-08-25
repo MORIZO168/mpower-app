@@ -1,6 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PACKAGES, buildSystem, suggestPackage } from "@/lib/packages";
+import { summarize, recommend } from "@/lib/loadprofile";
+import LoadProfileChart from "@/components/LoadProfileChart";
 import { FLAT_RATE, TOU, BATT_EFF, DEGRADE, ESCALATION, DAYS, MONTHS_TH, SAMPLE_PROD } from "@/lib/tariff";
 
 const baht = (n) => "฿" + Math.round(n).toLocaleString("th-TH");
@@ -21,9 +23,28 @@ export default function ProposalPage() {
   const sys = buildSystem(pkgId, { extraPanels, battCount, backup, warranty });
   const [annual, setAnnual] = useState(Math.round(sys.kwp * 1450));
 
-  const totalDaily = bill / FLAT_RATE / 30;
-  const dayUse = totalDaily * (pctDay / 100);
-  const nightUse = totalDaily * (1 - pctDay / 100);
+  const [lp, setLp] = useState(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("mpower_lp");
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      const rows = d.rows || d;
+      if (!rows || !rows.length) return;
+      setLp({ sm: summarize(rows) });
+      const rec = recommend(rows, "off_night");
+      const pkg = suggestPackage(rec.kwp);
+      setPkgId(pkg.id);
+      setBattCount(rec.battModules);
+      const s = buildSystem(pkg.id, { extraPanels: 0, battCount: rec.battModules, backup: false, warranty: 15 });
+      setAnnual(Math.round(s.kwp * 1450));
+      if (d.customer) setCustomer(d.customer);
+    } catch (e) {}
+  }, []);
+
+  const totalDaily = lp ? lp.sm.total : bill / FLAT_RATE / 30;
+  const dayUse = lp ? lp.sm.dayLoad : totalDaily * (pctDay / 100);
+  const nightUse = lp ? lp.sm.offLoad : totalDaily * (1 - pctDay / 100);
 
   const shapeSum = SAMPLE_PROD.reduce((a, b) => a + b, 0);
   const prod = SAMPLE_PROD.map((s) => (annual * s) / shapeSum);
@@ -132,14 +153,18 @@ export default function ProposalPage() {
       </Section>
 
       <Section n={3} title="พฤติกรรมการใช้ไฟของลูกค้า (Load Profile)">
-        <div className="text-[13px] text-[#6e6e73] mb-3">ใช้ไฟรวม ~<b className="text-[#1d1d1f]">{f1(totalDaily)} kWh/วัน</b> · จากบิลเฉลี่ย {baht(bill)}/เดือน</div>
-        {[["กลางวัน 09–16 น. (โซลาร์จ่ายตรง)", dayUse, "#F5821F"], ["หัวค่ำ+กลางคืน (แบต/กริด)", nightUse, "#6e6e73"]].map(([lab, v, col]) => (
-          <div key={lab} className="mb-2">
-            <div className="flex justify-between text-[12px] mb-1"><span className="text-[#1d1d1f]">{lab}</span><span className="font-medium">{f1(v)} kWh ({pctBand(v)}%)</span></div>
-            <div className="h-2.5 rounded-full bg-[#f0f0f2] overflow-hidden"><div style={{ width: pctBand(v) + "%", background: col }} className="h-full" /></div>
-          </div>
-        ))}
-        <div className="text-[11px] text-[#a1a1a6] mt-2">ยิ่งใช้ไฟกลางวันเยอะ โซลาร์ยิ่งคุ้ม · ส่วนหัวค่ำ/กลางคืนแบตเตอรี่ช่วยเก็บไฟไว้ใช้</div>
+        <div className="text-[13px] text-[#6e6e73] mb-3">ใช้ไฟรวม ~<b className="text-[#1d1d1f]">{f1(totalDaily)} kWh/วัน</b> · {lp ? "จาก Load Profile ที่ลูกค้าทำ" : "จากบิลเฉลี่ย " + baht(bill) + "/เดือน"}</div>
+        {lp ? (
+          <LoadProfileChart hours={lp.sm.h} kwp={sys.kwp} height={150} />
+        ) : (
+          [["กลางวัน 09–16 น. (โซลาร์จ่ายตรง)", dayUse, "#F5821F"], ["หัวค่ำ+กลางคืน (แบต/กริด)", nightUse, "#6e6e73"]].map(([lab, v, col]) => (
+            <div key={lab} className="mb-2">
+              <div className="flex justify-between text-[12px] mb-1"><span className="text-[#1d1d1f]">{lab}</span><span className="font-medium">{f1(v)} kWh ({pctBand(v)}%)</span></div>
+              <div className="h-2.5 rounded-full bg-[#f0f0f2] overflow-hidden"><div style={{ width: pctBand(v) + "%", background: col }} className="h-full" /></div>
+            </div>
+          ))
+        )}
+        <div className="text-[11px] text-[#a1a1a6] mt-2">{lp ? "เส้นส้ม = ผลิตจากแดดของระบบที่เสนอ · เส้นดำ = การใช้ไฟจริงของลูกค้า" : "ยิ่งใช้ไฟกลางวันเยอะ โซลาร์ยิ่งคุ้ม · ส่วนหัวค่ำ/กลางคืนแบตเตอรี่ช่วยเก็บไฟไว้ใช้"}</div>
       </Section>
 
       <Section n={4} title="แพคเกจที่นำเสนอ">
