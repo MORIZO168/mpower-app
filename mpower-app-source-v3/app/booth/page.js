@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import ProvinceInput from "@/components/ProvinceInput";
 import { CATALOG, AC_PRESETS, AC_DUTY, acRatedKw, rowPower, summarize, recommend, PANEL_W } from "@/lib/loadprofile";
 import { suggestPackage, ADDON } from "@/lib/packages";
+import LoadProfileChart from "@/components/LoadProfileChart";
 
 const BOOTH_URL = "https://mpower-system.vercel.app/booth";
 const TIMEFRAMES = [
@@ -215,10 +216,8 @@ export default function BoothPage() {
 
             <div className="bg-white rounded-2xl p-4 border border-[#ececed]">
               <div className="text-[13px] font-semibold text-[#1d1d1f] mb-1">รวมการใช้ไฟ {fmt(sm.total)} kWh/วัน</div>
-              <div className="flex items-end gap-[2px] h-16 mt-2">
-                {sm.h.map((v, i) => <div key={i} className="flex-1 flex flex-col justify-end"><div style={{ height: (v / maxH) * 100 + "%", background: i >= 9 && i <= 15 ? "#F5821F" : "#c7c9cd" }} className="w-full rounded-t-[2px] min-h-[2px]" /></div>)}
-              </div>
-              <div className="text-[10px] text-[#a1a1a6] mt-1">แท่งส้ม = ชั่วโมงที่แดดจ่ายตรง</div>
+              <LoadProfileChart hours={sm.h} kwp={recB.kwp} height={110} />
+
             </div>
 
             <div>
@@ -240,9 +239,7 @@ export default function BoothPage() {
             <div className="bg-white rounded-2xl p-4 border border-[#ececed]">
               <div className="text-[13px] text-[#6e6e73]">Load Profile</div>
               <div className="text-2xl font-bold text-[#1d1d1f]">{fmt(sm.total)} <span className="text-sm font-normal text-[#6e6e73]">kWh/วัน</span></div>
-              <div className="flex items-end gap-[2px] h-16 mt-2">
-                {sm.h.map((v, i) => <div key={i} className="flex-1 flex flex-col justify-end"><div style={{ height: (v / maxH) * 100 + "%", background: i >= 9 && i <= 15 ? "#F5821F" : "#c7c9cd" }} className="w-full rounded-t-[2px] min-h-[2px]" /></div>)}
-              </div>
+              <LoadProfileChart hours={sm.h} kwp={recB.kwp} height={110} />
               <div className="text-[11px] text-[#6e6e73] mt-2">กลางวัน {fmt(sm.dayLoad)} · หัวค่ำ/คืน {fmt(sm.offLoad)} kWh</div>
             </div>
 
