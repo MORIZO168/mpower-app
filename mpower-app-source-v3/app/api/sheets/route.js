@@ -15,7 +15,7 @@ export async function GET(req) {
   if (!tab) return Response.json({ configured: true, ok: true, hint: "ใส่ ?tab=ชื่อแท็บ เพื่อทดสอบอ่าน (เช่น ?tab=A-Card)" });
   try {
     const { headers, rows } = await getRows(tab);
-    return Response.json({ configured: true, tab, count: rows.length, headers, sample: rows.slice(0, 3) });
+    return Response.json({ configured: true, tab, count: rows.length, headers, rows, sample: rows.slice(0, 3) });
   } catch (e) {
     return Response.json({ configured: true, error: String(e).slice(0, 220) }, { status: 502 });
   }
