@@ -88,3 +88,17 @@ export function recommend(rows, batteryPref) {
   const monthlySave = Math.round(offset * 30 * SELL_RATE);
   return { ...s, battModules, battKwh, kwp, panels, dailyProd, monthlySave };
 }
+
+// ===== โค้งการผลิตรายชั่วโมง (ระฆังคว่ำ) — พีคเที่ยง 0 ก่อน 6 โมง/หลัง 18 โมง =====
+export const SOLAR_SHAPE = (function () {
+  const w = new Array(24).fill(0);
+  for (let h = 6; h <= 18; h++) w[h] = Math.sin((Math.PI * (h - 6)) / 12);
+  return w;
+})();
+
+// แจกจ่ายพลังงานที่ผลิตได้ทั้งวัน (kWp x แดด) ลงตามรูประฆัง → kWh ต่อชั่วโมง
+export function productionCurve(kwp) {
+  const daily = (kwp || 0) * SUN_HOURS;
+  const sum = SOLAR_SHAPE.reduce((a, b) => a + b, 0) || 1;
+  return SOLAR_SHAPE.map((w) => (daily * w) / sum);
+}
