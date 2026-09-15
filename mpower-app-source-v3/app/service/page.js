@@ -1,5 +1,5 @@
 // Server component — อ่านทะเบียน Installed_Base จาก Google Sheet → ส่งให้ ServiceClient
-import { isConfigured, getRows } from "@/lib/sheets";
+import { isConfigured, getRows } from "@/lib/db";
 import { SAMPLE, siteFromRow } from "@/lib/service";
 import ServiceClient from "@/components/ServiceClient";
 
