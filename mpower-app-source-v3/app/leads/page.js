@@ -1,5 +1,5 @@
 // Server component — อ่าน A-Card จาก Google Sheet แล้วส่งให้ฟอร์ม (client)
-import { isConfigured, getRows } from "@/lib/sheets";
+import { isConfigured, getRows } from "@/lib/db";
 import LeadsClient from "@/components/LeadsClient";
 
 export const dynamic = "force-dynamic";
