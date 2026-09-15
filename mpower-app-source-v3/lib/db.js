@@ -48,6 +48,8 @@ const REG = {
     ["Actual_Install_Date","actual_install_date"],["Sell_Price_THB","sell_price_thb"],["Planned_Cost_THB","planned_cost_thb"],
     ["Planned_Margin_%","planned_margin_pct"],["PEA_Status","pea_status"],["Handover_Status","handover_status"],
     ["Commissioning_Pass","commissioning_pass"],["Rework","rework"],["Customer_Rating","customer_rating"],["Note","note"],
+    // ฟิลด์สำหรับ SLD / ยื่นขนานไฟ (portal)
+    ["Sellback_Mode","sellback_mode"],["Main_Breaker_A","main_breaker_a"],["Combiner_Breaker_A","combiner_breaker_a"],["Battery_kWh","battery_kwh"],
   ]},
   "Stock": { table: "stock", idHeader: "SKU", idCol: "sku", cols: [
     ["SKU","sku"],["Type","type"],["Model","model"],["Spec","spec"],["On_Hand","on_hand"],
@@ -90,6 +92,16 @@ const REG = {
   ]},
   "Equipment_Catalog": { table: "equipment_catalog", idHeader: "Part_No", idCol: "part_no", cols: [
     ["Part_No","part_no"],["Equip_Type","equip_type"],["Brand","brand"],["Model","model"],["SKU","sku"],["Spec","spec"],["Note","note"],
+  ]},
+  // Portal ช่างซับ — รูปติดตั้งตาม checklist + คำขอเบิก
+  "Work_Photos": { table: "work_photos", idHeader: "ID", idCol: "id", cols: [
+    ["ID","id"],["Job_ID","job_id"],["Checklist_Key","checklist_key"],["Photo_URL","photo_url"],
+    ["Note","note"],["Uploaded_By","uploaded_by"],["Created_At","created_at"],
+  ]},
+  "Disbursement_Requests": { table: "disbursement_requests", idHeader: "ID", idCol: "id", cols: [
+    ["ID","id"],["Job_ID","job_id"],["Sub_Team","sub_team"],["Amount","amount"],["Status","status"],
+    ["Note","note"],["Requested_By","requested_by"],["Requested_At","requested_at"],
+    ["Approved_By","approved_by"],["Approved_At","approved_at"],
   ]},
 };
 
