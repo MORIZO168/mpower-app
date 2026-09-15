@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-// เมนูจัดเป็นหมวดหมู่ตาม flow การทำงาน
+// เมนูจัดเป็นหมวดหมู่ตาศ flow การทำงาน
 const NAV = [
   { group: "ภาพรวม", items: [
     { href: "/", label: "แดชบอร์ด", icon: "M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10" },
@@ -28,6 +28,7 @@ const NAV = [
     { href: "/workorder", label: "ใบสั่งงาน + นัดติดตั้ง", icon: "M9 11l3 3 8-8M20 12v6a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h9" },
     { href: "/pea", label: "ขอขนานไฟ (PEA)", icon: "M13 2L3 14h7l-1 8 10-12h-7z" },
     { href: "/handover", label: "ส่งมอบงาน", icon: "M9 12l2 2 4-4M7 3h10l4 4v14H3V7z" },
+    { href: "/record", label: "บันทึกงานติดตั้ง", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" },
   ]},
   { group: "บริการหลังการขาย", items: [
     { href: "/service", label: "ดูแลหลังติดตั้ง (O&M)", icon: "M12 8v4l3 2M12 3a9 9 0 100 18 9 9 0 000-18" },
