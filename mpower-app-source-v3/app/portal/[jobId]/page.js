@@ -88,7 +88,7 @@ export default function JobDetail() {
     });
     setDbusy(false);
     if (ins.error) { setDmsg({ t: "bad", m: ins.error.message }); return; }
-    setAmount(""); setDnote(""); setDmsg({ t: "ok", m: "ส่งคำขอเบิกแล้ว รออนุมัตะ" });
+    setAmount(""); setDnote(""); setDmsg({ t: "ok", m: "ส่งคำขอเบิกแล้ว รอตรวจสอบ" });
     refresh();
   }
 
