@@ -2,7 +2,7 @@
 // GET  /api/sheets                → เช็คว่าตั้ง env แล้วหรือยัง
 // GET  /api/sheets?tab=A-Card     → อ่านตัวอย่างจากแท็บ (ทดสอบการเชื่อม)
 // POST /api/sheets  {action:"append"|"update", ...}
-import { isConfigured, getRows, appendRow, updateRow, ensureTab } from "@/lib/sheets";
+import { isConfigured, getRows, appendRow, updateRow, ensureTab } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
