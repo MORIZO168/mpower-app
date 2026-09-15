@@ -71,6 +71,7 @@ const REG = {
   "Sub_Teams": { table: "sub_teams", idHeader: "Team_ID", idCol: "team_id", cols: [
     ["Team_ID","team_id"],["Team_Name","team_name"],["Lead_Name","lead_name"],["Contact","contact"],
     ["Rate_THB_per_W","rate_thb_per_w"],["Grade","grade"],["Active","active"],["Note","note"],
+    ["User_Email","user_email"],
   ]},
   "Installed_Base": { table: "installed_base", idHeader: "Site_ID", idCol: "site_id", cols: [
     ["Site_ID","site_id"],["Customer_Name","customer_name"],["Area","area"],["Brand","brand"],["kWp","kwp"],
