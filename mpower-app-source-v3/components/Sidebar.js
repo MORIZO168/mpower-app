@@ -39,6 +39,7 @@ const NAV = [
     { href: "/supply", label: "Supply / สต็อก", icon: "M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10" },
     { href: "/intake", label: "รับของเข้าสต็อก (สแกน)", icon: "M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" },
     { href: "/subs", label: "ซับคอนแทรค", icon: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" },
+    { href: "/disburse", label: "อนุมัติเบิก (ช่าง)", icon: "M9 12l2 2 4-4M12 3a9 9 0 100 18 9 9 0 000-18" },
   ]},
   { group: "บัญชี & การเงิน", items: [
     { href: "/finance", label: "การเงิน (P&L)", icon: "M3 6h18v12H3zM3 10h18M7 15h4" },
