@@ -1,6 +1,7 @@
 // Server component — บัญชี/การเงินจริง อ่าน sales/purchases/payment_schedule จาก Supabase
 import { PageHeader, Pill } from "@/components/ui";
 import { isConfigured, getRows } from "@/lib/db";
+import FinanceEntry from "@/components/FinanceEntry";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -80,6 +81,7 @@ export default async function FinancePage() {
         right={live ? <Pill tone="ok">ข้อมูลจริง</Pill> : <Pill tone="bad">ต่อ DB ไม่ได้</Pill>}
       />
 
+      {live && <FinanceEntry />}
       {!live && <div className="card p-4 mb-4 text-sm text-[#a13b3b] bg-[#fdf2f2]">ดึงข้อมูลไม่สำเร็จ — {err}</div>}
       {live && empty && <div className="card p-4 mb-4 text-sm text-[#6e6e73]">ยังไม่มีรายการขาย/ซื้อในระบบ — เริ่มบันทึกได้ที่หน้าขาย/จัดซื้อ แล้วตัวเลขจะขึ้นที่นี่</div>}
 
