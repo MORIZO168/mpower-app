@@ -220,7 +220,7 @@ export default function JobDetail() {
 }
 
 function statusCls(s) {
-  if (s === "อนุมัตะ") return "bg-[#eaf7ee] text-[#1a7d3a]";
+  if (s === "อนุมัติ") return "bg-[#eaf7ee] text-[#1a7d3a]";
   if (s === "ปฏิเสธ") return "bg-[#fdecec] text-[#c0392b]";
   return "bg-[#fff5ec] text-[#F5821F]";
 }
