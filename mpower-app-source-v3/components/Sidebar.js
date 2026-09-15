@@ -34,6 +34,7 @@ const NAV = [
   ]},
   { group: "จัดซื้อ & ทีมช่าง", items: [
     { href: "/supply", label: "Supply / สต็อก", icon: "M3 7l9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10" },
+    { href: "/intake", label: "รับของเข้าสต็อก (สแกน)", icon: "M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" },
     { href: "/subs", label: "ซับคอนแทรค", icon: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" },
   ]},
   { group: "มอนิเตอร์ & โชว์ลูกค้า", items: [
@@ -99,7 +100,7 @@ export default function Sidebar() {
       <aside className="hidden md:flex fixed inset-y-0 left-0 w-60 flex-col bg-white border-r border-[#e8e8ed] text-[#1d1d1f]">
         <div className="px-5 py-5 flex items-center gap-2.5 border-b border-[#f0f0f2]"><Brand /></div>
         <nav className="flex-1 py-3 overflow-y-auto"><NavItems path={path} /></nav>
-        <div className="px-5 py-3 border-t border-[#f0f0f2] text-[11px] text-[#a1a1a6]">v1.0 · ต่อ Google Sheets</div>
+        <div className="px-5 py-3 border-t border-[#f0f0f2] text-[11px] text-[#a1a1a6]">v1.1 · ต่อ Supabase</div>
       </aside>
 
       {/* Mobile top bar */}
@@ -123,7 +124,7 @@ export default function Sidebar() {
               </button>
             </div>
             <nav className="flex-1 py-3 overflow-y-auto"><NavItems path={path} onNav={() => setOpen(false)} /></nav>
-            <div className="px-5 py-3 border-t border-[#f0f0f2] text-[11px] text-[#a1a1a6]">v1.0 · ต่อ Google Sheets</div>
+            <div className="px-5 py-3 border-t border-[#f0f0f2] text-[11px] text-[#a1a1a6]">v1.1 · ต่อ Supabase</div>
           </aside>
         </div>
       )}
