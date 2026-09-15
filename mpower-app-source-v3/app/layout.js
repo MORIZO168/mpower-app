@@ -1,5 +1,5 @@
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import AppFrame from "@/components/AppFrame";
 
 export const metadata = {
   title: "M Power — ระบบบริหารงานติดตั้งโซลาร์",
@@ -10,12 +10,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="th">
       <body>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 md:ml-60 min-w-0 pt-14 md:pt-0">
-            {children}
-          </main>
-        </div>
+        <AppFrame>{children}</AppFrame>
       </body>
     </html>
   );
