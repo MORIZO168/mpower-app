@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { sb, portalConfigured } from "@/lib/supabaseBrowser";
 
 export const dynamic = "force-dynamic";
@@ -73,7 +74,7 @@ export default function PortalLogin() {
               </button>
             </form>
           )}
-          <p className="text-[11px] text-[#a1a1a6] mt-4">บัญชีช่างสร้างโดยแอดมิน หากเข้าไม่ได้ติดต่อออฟฟิศ</p>
+          <p className="text-[12px] text-[#6e6e73] mt-4 text-center">ยังไม่มีบัญชี? <Link href="/portal/register" className="text-[#F5821F] font-medium">สมัครใช้งาน</Link></p>
         </div>
       </div>
     </div>
