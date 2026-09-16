@@ -158,7 +158,7 @@ export default function JobDetail() {
                     {!c.required && <span className="text-[10px] text-[#a1a1a6]">(ถ้ามี)</span>}
                     <label className="ml-auto text-[12px] font-medium text-[#F5821F] border border-[#F5821F] rounded-lg px-3 py-1.5 cursor-pointer">
                       {uploading === c.key ? "กำลังอัป…" : (done ? "+ เพิ่ม" : "ถ่าย/อัปโหลด")}
-                      <input type="file" accept="image/*" capture="environment" className="hidden"
+                      <input type="file" accept="image/*" className="hidden"
                         disabled={uploading === c.key}
                         onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; onPick(c.key, f); }} />
                     </label>
