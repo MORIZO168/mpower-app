@@ -77,6 +77,9 @@ const REG = {
     ["Site_ID","site_id"],["Customer_Name","customer_name"],["Area","area"],["Brand","brand"],["kWp","kwp"],
     ["Battery_kWh","battery_kwh"],["Install_Date","install_date"],["Last_Service_Date","last_service_date"],
     ["Ticket_Issue","ticket_issue"],["Ticket_Status","ticket_status"],
+    // Atmoce Cloud live telemetry (imported 33 sites)
+    ["Atmoce_ID","atmoce_id"],["Today_kWh","today_kwh"],["Lifetime_kWh","lifetime_kwh"],
+    ["Online","online"],["Synced_At","synced_at"],
   ]},
   "Packages": { table: "packages", idHeader: "Pkg_ID", idCol: "pkg_id", cols: [
     ["Pkg_ID","pkg_id"],["Name","name"],["kWp","kwp"],["Panels","panels"],["Inverter","inverter"],["Price","price"],["Phase","phase"],
