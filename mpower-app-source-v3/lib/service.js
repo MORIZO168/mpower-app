@@ -1,7 +1,8 @@
 // ===== บริการหลังการขาย / O&M — ทะเบียนไซต์ + ประกัน + บำรุงรักษา =====
 // Installed Base = ฐานข้อมูลกลาง (ต่อ Google Sheet แท็บ Installed_Base — หัวคอลัมน์แถว 2)
 
-export const MA_INTERVAL_MONTHS = 6;   // รอบล้าง/ตรวจเช็ก (เดือน)
+export const MA_INTERVAL_MONTHS = 12;  // ล้างแผงครบรอบปี (เดือน)
+export const MA_LEAD_DAYS = 60;        // เตือนให้นัดลูกค้าก่อนครบรอบ 2 เดือน
 export const WARRANTY = { panel: 25, inverter: 10, battery: 10, workmanship: 1 }; // ปี (ค่าเริ่มต้น)
 export const BRAND_TONE = { Sigenergy: "#0a84ff", Atmoce: "#F5821F" };
 
@@ -47,7 +48,7 @@ export function maintenance(site, now) {
   if (!valid(base)) return { next: "—", daysLeft: 0, status: "ok" };
   const next = addMonths(base, MA_INTERVAL_MONTHS);
   const dl = daysLeft(next, now);
-  return { next: iso(next), daysLeft: dl, status: dl < 0 ? "overdue" : dl <= 30 ? "due" : "ok" };
+  return { next: iso(next), daysLeft: dl, status: dl < 0 ? "overdue" : dl <= MA_LEAD_DAYS ? "due" : "ok" };
 }
 
 export function warrantyFlags(site, now) {
@@ -66,7 +67,7 @@ export function overview(sites, now) {
     const m = maintenance(s, now);
     if (m.status !== "ok") {
       maDue++;
-      alerts.push({ type: "ma", site: s, label: "ถึงรอบล้าง/ตรวจเช็ก", detail: m.status === "overdue" ? "เลยกำหนด " + Math.abs(m.daysLeft) + " วัน (" + m.next + ")" : "อีก " + m.daysLeft + " วัน (" + m.next + ")", urgency: m.status === "overdue" ? 3 : 1, tone: m.status === "overdue" ? "bad" : "warn" });
+      alerts.push({ type: "ma", site: s, label: "นัดล้างแผง (ก่อนครบรอบปี)", detail: m.status === "overdue" ? "เลยครบรอบ " + Math.abs(m.daysLeft) + " วัน — ควรนัดด่วน (" + m.next + ")" : "นัดได้แล้ว — ครบรอบ " + m.next + " (อีก " + m.daysLeft + " วัน)", urgency: m.status === "overdue" ? 3 : 2, tone: m.status === "overdue" ? "bad" : "warn" });
     }
     if (s.ticket && s.ticket.status === "open") {
       tickets++;
