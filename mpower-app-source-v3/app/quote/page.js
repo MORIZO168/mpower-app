@@ -49,41 +49,50 @@ function bahtText(amount) {
 
 const num = (n) => Number(n).toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const int = (n) => Number(n).toLocaleString("th-TH");
+const N = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };  // coerce (รับ "" ระหว่างพิมพ์ได้)
+
+const inCls = "w-full px-2.5 py-1.5 border border-[#d2d2d7] rounded-lg text-sm bg-white";
+// Field อยู่ระดับ module (ไม่ใช่ในฟังก์ชัน) — กันปัญหา input เด้ง/พิมพ์ทีละตัว
+function Field({ label, children }) {
+  return <div><label className="block text-[11px] text-[#6e6e73] mb-1">{label}</label>{children}</div>;
+}
 
 export default function QuotePage() {
-  const [customer, setCustomer] = useState("Swerb Speciality");
-  const [panelW, setPanelW] = useState(665);
-  const [panelCount, setPanelCount] = useState(30);
+  const [customer, setCustomer] = useState("");
+  const [panelW, setPanelW] = useState("665");
+  const [panelCount, setPanelCount] = useState("30");
   const [phase, setPhase] = useState(3);
-  const [batteryKwh, setBatteryKwh] = useState(0);
+  const [batteryKwh, setBatteryKwh] = useState("0");
   const [backup, setBackup] = useState(false);
   const [warranty, setWarranty] = useState(15);
-  const [panelBahtW, setPanelBahtW] = useState(4.3);
-  const [cMount, setCMount] = useState(1);
-  const [cBos, setCBos] = useState(3);
-  const [cInstall, setCInstall] = useState(2);
-  const [service, setService] = useState(30000);
-  const [permit, setPermit] = useState(50000);
-  const [margin, setMargin] = useState(30);
+  const [panelBahtW, setPanelBahtW] = useState("4.3");
+  const [cMount, setCMount] = useState("1");
+  const [cBos, setCBos] = useState("3");
+  const [cInstall, setCInstall] = useState("2");
+  const [service, setService] = useState("30000");
+  const [permit, setPermit] = useState("50000");
+  const [margin, setMargin] = useState("30");
   const [marginMode, setMarginMode] = useState("markup");
-  const [discount, setDiscount] = useState(0);
+  const [discount, setDiscount] = useState("0");
   const [roundNet, setRoundNet] = useState(true);
 
-  const W = panelW * panelCount;
+  const pW = N(panelW), pCount = N(panelCount), battK = N(batteryKwh);
+  const marginN = N(margin), discountN = N(discount);
+  const W = pW * pCount;
   const dcKwp = W / 1000;
-  const acKwac = (panelCount * 1250) / 2 / 1000;
+  const acKwac = (pCount * 1250) / 2 / 1000;
   const dcac = acKwac ? dcKwp / acKwac : 0;
-  const inv = Math.ceil(panelCount / 2);
+  const inv = Math.max(0, Math.ceil(pCount / 2));
   const combiner = phase === 1
     ? (inv < 5 ? { n: "MC100L", p: PL.MC100L } : { n: "MC100", p: PL.MC100 })
     : { n: "MC100T", p: PL.MC100T };
   const combQty = phase === 1 ? 1 : Math.max(1, Math.ceil(inv / 30));
   const junc = phase === 1
-    ? { n: "MT-04003-A", p: PL.JUNC1P, q: panelCount < 9 ? 1 : panelCount < 17 ? 2 : panelCount < 25 ? 3 : 4 }
+    ? { n: "MT-04003-A", p: PL.JUNC1P, q: pCount < 9 ? 1 : pCount < 17 ? 2 : pCount < 25 ? 3 : 4 }
     : { n: "MT-03205-A", p: PL.JUNC3P, q: inv < 13 ? 1 : inv < 25 ? 2 : 3 };
   const waAddon = warranty === 20 ? { n: "MI-1250-P5", p: PL.P5, q: inv }
     : warranty === 25 ? { n: "MI-1250-P10", p: PL.P10, q: inv } : null;
-  const battQty = Math.round((batteryKwh || 0) / 7);
+  const battQty = Math.round(battK / 7);
   const backupBox = backup ? (phase === 1 ? { n: "MU100S", p: PL.BACKUP1P } : { n: "MU100T", p: PL.BACKUP3P }) : null;
 
   const bom = [
@@ -97,16 +106,16 @@ export default function QuotePage() {
   ];
   const atmoceTotal = bom.reduce((s, x) => s + x.q * x.p, 0);
 
-  const panelCost = W * panelBahtW;
-  const mounting = W * cMount;
-  const bos = W * cBos;
-  const install = W * cInstall;
-  const totalCost = atmoceTotal + panelCost + mounting + bos + install + service + permit;
+  const panelCost = W * N(panelBahtW);
+  const mounting = W * N(cMount);
+  const bos = W * N(cBos);
+  const install = W * N(cInstall);
+  const totalCost = atmoceTotal + panelCost + mounting + bos + install + N(service) + N(permit);
 
   const priceBeforeDiscount = marginMode === "margin"
-    ? totalCost / (1 - Math.min(margin, 99) / 100)
-    : totalCost * (1 + margin / 100);
-  const afterDiscount = priceBeforeDiscount - discount;
+    ? totalCost / (1 - Math.min(marginN, 99) / 100)
+    : totalCost * (1 + marginN / 100);
+  const afterDiscount = priceBeforeDiscount - discountN;
   let preVat, vat, grand, shownDiscount;
   if (roundNet) {
     grand = Math.round((afterDiscount * 1.07) / 100) * 100;
@@ -117,16 +126,17 @@ export default function QuotePage() {
     preVat = Math.round(afterDiscount * 100) / 100;
     vat = Math.round(preVat * 0.07 * 100) / 100;
     grand = Math.round((preVat + vat) * 100) / 100;
-    shownDiscount = discount;
+    shownDiscount = discountN;
   }
-  const perW = grand / W;
+  const perW = W ? grand / W : 0;
+  const costPerW = W ? totalCost / W : 0;
 
   const annualKwh = Math.round(dcKwp * 1450);
   const savingYr = Math.round(annualKwh * 4.2);
   const payback = savingYr ? (grand / savingYr).toFixed(1) : "-";
 
   const subItems = [
-    `แผงโซล่าเซลล์ (PV) ${panelW}W จำนวน ${panelCount} แผง`,
+    `แผงโซล่าเซลล์ (PV) ${pW}W จำนวน ${pCount} แผง`,
     `Atmoce Micro inverter MI-1250 ${inv} ชุด`,
     `Atmoce ${combiner.n}${combQty > 1 ? ` ${combQty} ตัว` : ""}`,
     ...(battQty > 0 ? [`Atmoce M-Battery 7kWh ${battQty} ก้อน${backupBox ? " + Backup Box" : ""}`] : []),
@@ -141,11 +151,6 @@ export default function QuotePage() {
     "ดูแลบำรุงรักษา + ล้างแผง 1 ครั้ง/ปี ตลอดประกัน 3 ปี",
   ];
 
-  const inCls = "w-full px-2.5 py-1.5 border border-[#d2d2d7] rounded-lg text-sm bg-white";
-  const Field = ({ label, children }) => (
-    <div><label className="block text-[11px] text-[#6e6e73] mb-1">{label}</label>{children}</div>
-  );
-
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-5">
@@ -157,10 +162,10 @@ export default function QuotePage() {
         <div className="font-semibold text-[#1d1d1f] mb-3">1) เลือกแผง (เริ่มจากตรงนี้)</div>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           <Field label="ชื่อลูกค้า"><input className={inCls} value={customer} onChange={(e) => setCustomer(e.target.value)} /></Field>
-          <Field label="ขนาดแผง (Wp)"><input type="number" className={inCls} value={panelW} onChange={(e) => setPanelW(+e.target.value || 1)} /></Field>
-          <Field label="จำนวนแผง"><input type="number" className={inCls} value={panelCount} onChange={(e) => setPanelCount(+e.target.value || 1)} /></Field>
+          <Field label="ขนาดแผง (Wp)"><input type="number" inputMode="decimal" className={inCls} value={panelW} onChange={(e) => setPanelW(e.target.value)} /></Field>
+          <Field label="จำนวนแผง"><input type="number" inputMode="numeric" className={inCls} value={panelCount} onChange={(e) => setPanelCount(e.target.value)} /></Field>
           <Field label="เฟส"><select className={inCls} value={phase} onChange={(e) => setPhase(+e.target.value)}><option value={1}>1 เฟส</option><option value={3}>3 เฟส</option></select></Field>
-          <Field label="แบตเตอรี่ (kWh)"><input type="number" step="7" className={inCls} value={batteryKwh} onChange={(e) => setBatteryKwh(+e.target.value || 0)} /></Field>
+          <Field label="แบตเตอรี่ (kWh)"><input type="number" inputMode="decimal" step="7" className={inCls} value={batteryKwh} onChange={(e) => setBatteryKwh(e.target.value)} /></Field>
           <Field label="ประกัน (ปี)"><select className={inCls} value={warranty} onChange={(e) => setWarranty(+e.target.value)}><option value={15}>15</option><option value={20}>20</option><option value={25}>25</option></select></Field>
         </div>
         <label className="flex items-center gap-2 text-sm text-[#1d1d1f] mt-3">
@@ -192,12 +197,12 @@ export default function QuotePage() {
         <div className="card p-5">
           <div className="font-semibold text-[#1d1d1f] mb-3">3) ต้นทุนส่วนเพิ่ม (แก้ได้)</div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="แผงโซลาร์ ฿/W"><input type="number" step="0.1" className={inCls} value={panelBahtW} onChange={(e) => setPanelBahtW(+e.target.value || 0)} /></Field>
-            <Field label="Mounting ฿/W"><input type="number" step="0.1" className={inCls} value={cMount} onChange={(e) => setCMount(+e.target.value || 0)} /></Field>
-            <Field label="BOS/สาย/ท่อ/กราวด์ ฿/W"><input type="number" step="0.1" className={inCls} value={cBos} onChange={(e) => setCBos(+e.target.value || 0)} /></Field>
-            <Field label="ติดตั้ง ฿/W"><input type="number" step="0.1" className={inCls} value={cInstall} onChange={(e) => setCInstall(+e.target.value || 0)} /></Field>
-            <Field label="Service (บาท)"><input type="number" step="1000" className={inCls} value={service} onChange={(e) => setService(+e.target.value || 0)} /></Field>
-            <Field label="Permit (บาท)"><input type="number" step="1000" className={inCls} value={permit} onChange={(e) => setPermit(+e.target.value || 0)} /></Field>
+            <Field label="แผงโซลาร์ ฿/W"><input type="number" inputMode="decimal" step="0.1" className={inCls} value={panelBahtW} onChange={(e) => setPanelBahtW(e.target.value)} /></Field>
+            <Field label="Mounting ฿/W"><input type="number" inputMode="decimal" step="0.1" className={inCls} value={cMount} onChange={(e) => setCMount(e.target.value)} /></Field>
+            <Field label="BOS/สาย/ท่อ/กราวด์ ฿/W"><input type="number" inputMode="decimal" step="0.1" className={inCls} value={cBos} onChange={(e) => setCBos(e.target.value)} /></Field>
+            <Field label="ติดตั้ง ฿/W"><input type="number" inputMode="decimal" step="0.1" className={inCls} value={cInstall} onChange={(e) => setCInstall(e.target.value)} /></Field>
+            <Field label="Service (บาท)"><input type="number" inputMode="numeric" step="1000" className={inCls} value={service} onChange={(e) => setService(e.target.value)} /></Field>
+            <Field label="Permit (บาท)"><input type="number" inputMode="numeric" step="1000" className={inCls} value={permit} onChange={(e) => setPermit(e.target.value)} /></Field>
           </div>
         </div>
       </div>
@@ -207,14 +212,14 @@ export default function QuotePage() {
           <div className="font-semibold text-[#1d1d1f] mb-3">4) กำไร + ส่วนลด</div>
           <div className="grid grid-cols-3 gap-3 mb-3">
             <Field label="โหมดกำไร"><select className={inCls} value={marginMode} onChange={(e) => setMarginMode(e.target.value)}><option value="markup">markup (บนต้นทุน)</option><option value="margin">margin (บนราคาขาย)</option></select></Field>
-            <Field label="กำไร (%)"><input type="number" className={inCls} value={margin} onChange={(e) => setMargin(+e.target.value || 0)} /></Field>
-            <Field label="ส่วนลด (฿ ก่อน VAT)"><input type="number" step="100" className={inCls} value={discount} onChange={(e) => setDiscount(+e.target.value || 0)} /></Field>
+            <Field label="กำไร (%)"><input type="number" inputMode="decimal" className={inCls} value={margin} onChange={(e) => setMargin(e.target.value)} /></Field>
+            <Field label="ส่วนลด (฿ ก่อน VAT)"><input type="number" inputMode="numeric" step="100" className={inCls} value={discount} onChange={(e) => setDiscount(e.target.value)} /></Field>
           </div>
           <label className="flex items-center gap-2 text-sm text-[#1d1d1f]">
             <input type="checkbox" checked={roundNet} onChange={(e) => setRoundNet(e.target.checked)} className="w-4 h-4 accent-[#F5821F]" />
             ปัดยอดรวมทั้งสิ้น (รวม VAT) เป็นเลขเน็ท หลักร้อย
           </label>
-          <div className="mt-3 text-xs text-[#6e6e73]">ต้นทุน ฿{(totalCost / W).toFixed(2)}/W · ราคาขาย <b className="text-[#F5821F]">฿{perW.toFixed(2)}/W</b></div>
+          <div className="mt-3 text-xs text-[#6e6e73]">ต้นทุน ฿{costPerW.toFixed(2)}/W · ราคาขาย <b className="text-[#F5821F]">฿{perW.toFixed(2)}/W</b></div>
         </div>
 
         <div className="card p-5">
@@ -223,9 +228,9 @@ export default function QuotePage() {
             <tr className="text-[#6e6e73]"><td className="py-0.5">อุปกรณ์ Atmoce</td><td className="text-right">{int(atmoceTotal)}</td></tr>
             <tr className="text-[#6e6e73]"><td className="py-0.5">แผงโซลาร์</td><td className="text-right">{int(Math.round(panelCost))}</td></tr>
             <tr className="text-[#6e6e73]"><td className="py-0.5">Mounting + BOS + ติดตั้ง</td><td className="text-right">{int(Math.round(mounting + bos + install))}</td></tr>
-            <tr className="text-[#6e6e73]"><td className="py-0.5">Service + Permit</td><td className="text-right">{int(service + permit)}</td></tr>
+            <tr className="text-[#6e6e73]"><td className="py-0.5">Service + Permit</td><td className="text-right">{int(N(service) + N(permit))}</td></tr>
             <tr className="border-t border-[#eee] font-medium"><td className="py-1">ต้นทุนรวม</td><td className="text-right">{int(Math.round(totalCost))}</td></tr>
-            <tr><td className="py-0.5">+ กำไร {margin}%</td><td className="text-right">{int(Math.round(priceBeforeDiscount - totalCost))}</td></tr>
+            <tr><td className="py-0.5">+ กำไร {marginN}%</td><td className="text-right">{int(Math.round(priceBeforeDiscount - totalCost))}</td></tr>
             <tr className="text-[#c0392b]"><td className="py-0.5">ส่วนลดพิเศษ</td><td className="text-right">{shownDiscount > 0 ? "-" + num(shownDiscount) : "-"}</td></tr>
             <tr className="font-medium"><td className="py-1">รวมราคา (ก่อน VAT)</td><td className="text-right">{num(preVat)}</td></tr>
             <tr><td className="py-0.5">VAT 7%</td><td className="text-right">{num(vat)}</td></tr>
@@ -252,7 +257,7 @@ export default function QuotePage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-3 text-[12px]">
-          <div><span className="text-[#6e6e73]">ชื่อลูกค้า:</span> <b>{customer}</b></div>
+          <div><span className="text-[#6e6e73]">ชื่อลูกค้า:</span> <b>{customer || "____________"}</b></div>
           <div><span className="text-[#6e6e73]">เลขที่ใบเสนอราคา:</span> QT-2608-001</div>
           <div><span className="text-[#6e6e73]">วันที่:</span> ____________</div>
           <div><span className="text-[#6e6e73]">เงื่อนไขชำระ:</span> มัดจำ 50% / 30% / ปิดงาน</div>
@@ -294,7 +299,7 @@ export default function QuotePage() {
       </div>
 
       <div className="flex items-center gap-3 mt-4">
-        <button className="bg-[#1a3c6e] text-white rounded-lg px-6 py-2.5 text-sm font-semibold">พิมพ์ / บันทึก PDF</button>
+        <button onClick={() => window.print()} className="bg-[#1a3c6e] text-white rounded-lg px-6 py-2.5 text-sm font-semibold">พิมพ์ / บันทึก PDF</button>
         <span className="text-xs text-[#8593a8]">ต่อจริง: ออกเลขใบเสนอ + บันทึกลงชีต + แนบ Proposal เต็ม (เฟสถัดไป)</span>
       </div>
     </div>
