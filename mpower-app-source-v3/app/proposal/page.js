@@ -6,24 +6,41 @@ import LoadProfileChart from "@/components/LoadProfileChart";
 import usePackages from "@/components/usePackages";
 import { FLAT_RATE, TOU, BATT_EFF, DEGRADE, ESCALATION, DAYS, MONTHS_TH, SAMPLE_PROD } from "@/lib/tariff";
 
-const baht = (n) => "฿" + Math.round(n).toLocaleString("th-TH");
+const baht = (n) => "฿" + Math.round(Number(n) || 0).toLocaleString("th-TH");
 const f1 = (n) => Number(n).toLocaleString("th-TH", { maximumFractionDigits: 1 });
+const int = (n) => (Number(n) || 0).toLocaleString("th-TH");
+const N = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };  // coerce (รับ "" ระหว่างพิมพ์ได้)
 const inCls = "w-full px-2.5 py-1.5 border border-[#d2d2d7] rounded-lg text-sm bg-white";
 
+// Section อยู่ระดับ module — กัน re-mount ตอน re-render
+function Section({ n, title, children }) {
+  return (
+    <div className="card p-6 mb-4">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="w-6 h-6 rounded-full bg-[#F5821F] text-white flex items-center justify-center text-xs font-bold">{n}</span>
+        <div className="font-bold text-[#1d1d1f]">{title}</div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function ProposalPage() {
-  const [customer, setCustomer] = useState("คุณลูกค้า ตัวอย่าง");
-  const [bill, setBill] = useState(7000);
-  const [pctDay, setPctDay] = useState(45);
+  const [customer, setCustomer] = useState("");
+  const [bill, setBill] = useState("7000");
+  const [pctDay, setPctDay] = useState("45");
   const [eveShare, setEveShare] = useState(40);
   const [pkgId, setPkgId] = useState("M");
-  const [extraPanels, setExtraPanels] = useState(0);
-  const [battCount, setBattCount] = useState(1);
+  const [extraPanels, setExtraPanels] = useState("0");
+  const [battCount, setBattCount] = useState("1");
   const [backup, setBackup] = useState(false);
   const [warranty, setWarranty] = useState(15);
 
+  const extraN = N(extraPanels), battN = N(battCount), billN = N(bill), pctDayN = N(pctDay);
   const pkgs = usePackages();
-  const sys = buildSystem(pkgId, { extraPanels, battCount, backup, warranty }, pkgs);
+  const sys = buildSystem(pkgId, { extraPanels: extraN, battCount: battN, backup, warranty }, pkgs);
   const [annual, setAnnual] = useState(Math.round(sys.kwp * 1450));
+  const annualN = N(annual);
 
   const [lp, setLp] = useState(null);
   useEffect(() => {
@@ -37,19 +54,19 @@ export default function ProposalPage() {
       const rec = recommend(rows, "off_night");
       const pkg = suggestPackage(rec.kwp);
       setPkgId(pkg.id);
-      setBattCount(rec.battModules);
+      setBattCount(String(rec.battModules));
       const s = buildSystem(pkg.id, { extraPanels: 0, battCount: rec.battModules, backup: false, warranty: 15 });
       setAnnual(Math.round(s.kwp * 1450));
       if (d.customer) setCustomer(d.customer);
     } catch (e) {}
   }, []);
 
-  const totalDaily = lp ? lp.sm.total : bill / FLAT_RATE / 30;
-  const dayUse = lp ? lp.sm.dayLoad : totalDaily * (pctDay / 100);
-  const nightUse = lp ? lp.sm.offLoad : totalDaily * (1 - pctDay / 100);
+  const totalDaily = lp ? lp.sm.total : billN / FLAT_RATE / 30;
+  const dayUse = lp ? lp.sm.dayLoad : totalDaily * (pctDayN / 100);
+  const nightUse = lp ? lp.sm.offLoad : totalDaily * (1 - pctDayN / 100);
 
   const shapeSum = SAMPLE_PROD.reduce((a, b) => a + b, 0);
-  const prod = SAMPLE_PROD.map((s) => (annual * s) / shapeSum);
+  const prod = SAMPLE_PROD.map((s) => (annualN * s) / shapeSum);
 
   const { onPeak, offPeak } = TOU;
   let saveFlatYr = 0, saveTouYr = 0;
@@ -83,18 +100,8 @@ export default function ProposalPage() {
 
   const preVat = sys.price / 1.07;
   const vat = sys.price - preVat;
-  const savePct = bill ? (baseSave / (bill * 12)) * 100 : 0;
+  const savePct = billN ? (baseSave / (billN * 12)) * 100 : 0;
   const pctBand = (v) => (totalDaily ? Math.round((v / totalDaily) * 100) : 0);
-
-  const Section = ({ n, title, children }) => (
-    <div className="card p-6 mb-4">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="w-6 h-6 rounded-full bg-[#F5821F] text-white flex items-center justify-center text-xs font-bold">{n}</span>
-        <div className="font-bold text-[#1d1d1f]">{title}</div>
-      </div>
-      {children}
-    </div>
-  );
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -102,17 +109,17 @@ export default function ProposalPage() {
         <div className="font-semibold text-[#1d1d1f] mb-3">ตั้งค่าข้อเสนอ</div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div><label className="block text-[11px] text-[#6e6e73] mb-1">ชื่อลูกค้า</label><input className={inCls} value={customer} onChange={(e) => setCustomer(e.target.value)} /></div>
-          <div><label className="block text-[11px] text-[#6e6e73] mb-1">ค่าไฟ/เดือน (฿)</label><input type="number" className={inCls} value={bill} onChange={(e) => setBill(+e.target.value || 0)} /></div>
-          <div><label className="block text-[11px] text-[#6e6e73] mb-1">% ใช้ไฟกลางวัน</label><input type="number" className={inCls} value={pctDay} onChange={(e) => setPctDay(+e.target.value || 0)} /></div>
+          <div><label className="block text-[11px] text-[#6e6e73] mb-1">ค่าไฟ/เดือน (฿)</label><input type="number" inputMode="numeric" className={inCls} value={bill} onChange={(e) => setBill(e.target.value)} /></div>
+          <div><label className="block text-[11px] text-[#6e6e73] mb-1">% ใช้ไฟกลางวัน</label><input type="number" inputMode="numeric" className={inCls} value={pctDay} onChange={(e) => setPctDay(e.target.value)} /></div>
           <div><label className="block text-[11px] text-[#6e6e73] mb-1">แพคเกจ</label>
-            <select className={inCls} value={pkgId} onChange={(e) => { setPkgId(e.target.value); setAnnual(Math.round(buildSystem(e.target.value, { extraPanels, battCount, backup, warranty }, pkgs).kwp * 1450)); }}>
+            <select className={inCls} value={pkgId} onChange={(e) => { setPkgId(e.target.value); setAnnual(Math.round(buildSystem(e.target.value, { extraPanels: extraN, battCount: battN, backup, warranty }, pkgs).kwp * 1450)); }}>
               {PACKAGES.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
-          <div><label className="block text-[11px] text-[#6e6e73] mb-1">+ แผงเพิ่ม (แผ่น)</label><input type="number" className={inCls} value={extraPanels} onChange={(e) => setExtraPanels(+e.target.value || 0)} /></div>
-          <div><label className="block text-[11px] text-[#6e6e73] mb-1">+ แบต (ก้อน 7kWh)</label><input type="number" className={inCls} value={battCount} onChange={(e) => setBattCount(+e.target.value || 0)} /></div>
+          <div><label className="block text-[11px] text-[#6e6e73] mb-1">+ แผงเพิ่ม (แผ่น)</label><input type="number" inputMode="numeric" className={inCls} value={extraPanels} onChange={(e) => setExtraPanels(e.target.value)} /></div>
+          <div><label className="block text-[11px] text-[#6e6e73] mb-1">+ แบต (ก้อน 7kWh)</label><input type="number" inputMode="numeric" className={inCls} value={battCount} onChange={(e) => setBattCount(e.target.value)} /></div>
           <div><label className="block text-[11px] text-[#6e6e73] mb-1">ประกัน (ปี)</label><select className={inCls} value={warranty} onChange={(e) => setWarranty(+e.target.value)}><option value={15}>15</option><option value={20}>20</option><option value={25}>25</option></select></div>
-          <div><label className="block text-[11px] text-[#6e6e73] mb-1">ผลิต/ปี (kWh)</label><input type="number" className={inCls} value={annual} onChange={(e) => setAnnual(+e.target.value || 0)} /></div>
+          <div><label className="block text-[11px] text-[#6e6e73] mb-1">ผลิต/ปี (kWh)</label><input type="number" inputMode="numeric" className={inCls} value={annual} onChange={(e) => setAnnual(e.target.value)} /></div>
         </div>
         <label className="flex items-center gap-2 text-sm text-[#1d1d1f] mt-3">
           <input type="checkbox" checked={backup} onChange={(e) => setBackup(e.target.checked)} className="w-4 h-4 accent-[#F5821F]" /> + Backup box (ใช้ไฟตอนไฟดับ)
@@ -125,16 +132,16 @@ export default function ProposalPage() {
 
       <div className="text-center mb-5">
         <div className="font-bold text-2xl tracking-wide text-[#1d1d1f]">M POWER <span className="text-[#F5821F]">NATURE ENERGY</span></div>
-        <div className="text-sm text-[#6e6e73] mt-1">ข้อเสนอระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ · สำหรับ {customer}</div>
+        <div className="text-sm text-[#6e6e73] mt-1">ข้อเสนอระบบผลิตไฟฟ้าพลังงานแสงอาทิตย์ · สำหรับ {customer || "ลูกค้า"}</div>
       </div>
 
       <Section n={1} title="สรุปผู้บริหาร (Executive Summary)">
         <p className="text-[13px] text-[#6e6e73] leading-relaxed mb-4">
-          ระบบโซลาร์ขนาด <b className="text-[#1d1d1f]">{sys.kwp} kWp</b>{sys.battery ? ` พร้อมแบตเตอรี่ ${sys.battery} kWh` : ""} สำหรับ {customer} ·
+          ระบบโซลาร์ขนาด <b className="text-[#1d1d1f]">{sys.kwp} kWp</b>{sys.battery ? ` พร้อมแบตเตอรี่ ${sys.battery} kWh` : ""} สำหรับ {customer || "ลูกค้า"} ·
           ลดค่าไฟได้ประมาณ <b className="text-[#1a7d3a]">{savePct.toFixed(0)}%</b> คืนทุนใน <b className="text-[#F5821F]">{f1(payback)} ปี</b> และประหยัดสะสม 15 ปีราว <b className="text-[#1d1d1f]">{baht(life15)}</b>
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[["ขนาดระบบ", sys.kwp + " kWp"], ["ผลิตไฟ/ปี", annual.toLocaleString("th-TH") + " kWh"], ["ประหยัด/ปี", baht(baseSave)], ["คืนทุน", f1(payback) + " ปี"]].map(([k, v]) => (
+          {[["ขนาดระบบ", sys.kwp + " kWp"], ["ผลิตไฟ/ปี", int(annualN) + " kWh"], ["ประหยัด/ปี", baht(baseSave)], ["คืนทุน", f1(payback) + " ปี"]].map(([k, v]) => (
             <div key={k} className="bg-[#f5f5f7] rounded-xl p-3 text-center"><div className="text-lg font-bold text-[#F5821F]">{v}</div><div className="text-[11px] text-[#6e6e73]">{k}</div></div>
           ))}
         </div>
@@ -155,7 +162,7 @@ export default function ProposalPage() {
       </Section>
 
       <Section n={3} title="พฤติกรรมการใช้ไฟของลูกค้า (Load Profile)">
-        <div className="text-[13px] text-[#6e6e73] mb-3">ใช้ไฟรวม ~<b className="text-[#1d1d1f]">{f1(totalDaily)} kWh/วัน</b> · {lp ? "จาก Load Profile ที่ลูกค้าทำ" : "จากบิลเฉลี่ย " + baht(bill) + "/เดือน"}</div>
+        <div className="text-[13px] text-[#6e6e73] mb-3">ใช้ไฟรวม ~<b className="text-[#1d1d1f]">{f1(totalDaily)} kWh/วัน</b> · {lp ? "จาก Load Profile ที่ลูกค้าทำ" : "จากบิลเฉลี่ย " + baht(billN) + "/เดือน"}</div>
         {lp ? (
           <LoadProfileChart hours={lp.sm.h} kwp={sys.kwp} height={150} />
         ) : (
@@ -197,7 +204,7 @@ export default function ProposalPage() {
         </div>
         <div className="flex items-end gap-1 h-28">
           {flow.map((r) => {
-            const h = Math.max(4, (r.cum / life15) * 100);
+            const h = life15 ? Math.max(4, (r.cum / life15) * 100) : 4;
             const paid = r.cum >= sys.price;
             return (
               <div key={r.y} className="flex-1 flex flex-col items-center justify-end" title={`ปีที่ ${r.y}: สะสม ${baht(r.cum)}`}>
