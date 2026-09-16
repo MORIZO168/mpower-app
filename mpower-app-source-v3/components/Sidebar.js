@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
 // เมนูจัดตาม 6 เสาธุรกิจ: ภาพรวม / ขาย / CRM&ตลาด / หน้างาน&ติดตั้ง / หลังการขาย / สต๊อก&จัดซื้อ / บัญชี
@@ -81,7 +81,12 @@ function NavItems({ path, onNav }) {
 function Brand() {
   return (
     <>
-      <Mark />
+      {path !== "/" && (
+          <button onClick={() => router.back()} aria-label="ย้อนกลับ" className="p-1 text-[#6e6e73]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          </button>
+        )}
+        <Mark />
       <div>
         <div className="font-semibold tracking-[0.14em] leading-none text-[#1d1d1f]">M POWER</div>
         <div className="text-[10px] tracking-[0.3em] text-[#a1a1a6] mt-1">NATURE ENERGY</div>
@@ -92,6 +97,7 @@ function Brand() {
 
 export default function Sidebar() {
   const path = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   return (
