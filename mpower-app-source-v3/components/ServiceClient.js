@@ -92,7 +92,7 @@ export default function ServiceClient({ sites = [], configured, error, sample })
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
           <Stat label="ไซต์ในการดูแล" value={o.count} />
           <Stat label="ประกันใกล้หมด/หมด" value={o.expiring} tone={o.expiring ? "text-[#c0392b]" : "text-[#1d1d1f]"} />
-          <Stat label="ถึงกำหนดล้าง/เช็ก" value={o.maDue} tone={o.maDue ? "text-[#b7791f]" : "text-[#1d1d1f]"} />
+          <Stat label="ต้องนัดล้างแผง" value={o.maDue} tone={o.maDue ? "text-[#b7791f]" : "text-[#1d1d1f]"} />
           <Stat label="เคสเปิดอยู่" value={o.tickets} tone={o.tickets ? "text-[#c0392b]" : "text-[#1d1d1f]"} />
         </div>
 
@@ -213,7 +213,7 @@ export default function ServiceClient({ sites = [], configured, error, sample })
           </div>
         </div>
 
-        <p className="text-[11px] text-[#a1a1a6] text-center mt-10">รอบบำรุงรักษาทุก {MA_INTERVAL_MONTHS} เดือน · ประกันแผง 25 ปี / อินเวอร์เตอร์-แบต 10 ปี / ค่าแรง 1 ปี</p>
+        <p className="text-[11px] text-[#a1a1a6] text-center mt-10">ล้างแผงทุก {MA_INTERVAL_MONTHS} เดือน (ครบรอบปี) · เตือนให้นัดลูกค้าก่อนครบรอบ 2 เดือน · ประกันแผง 25 ปี / อินเวอร์เตอร์-แบต 10 ปี / ค่าแรง 1 ปี</p>
       </div>
     </div>
   );
