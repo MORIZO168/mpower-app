@@ -81,12 +81,7 @@ function NavItems({ path, onNav }) {
 function Brand() {
   return (
     <>
-      {path !== "/" && (
-          <button onClick={() => router.back()} aria-label="ย้อนกลับ" className="p-1 text-[#6e6e73]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-          </button>
-        )}
-        <Mark />
+      <Mark />
       <div>
         <div className="font-semibold tracking-[0.14em] leading-none text-[#1d1d1f]">M POWER</div>
         <div className="text-[10px] tracking-[0.3em] text-[#a1a1a6] mt-1">NATURE ENERGY</div>
@@ -114,6 +109,11 @@ export default function Sidebar() {
         <button onClick={() => setOpen(true)} aria-label="เปิดเมนู" className="p-1 -ml-1 text-[#1d1d1f]">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
         </button>
+        {path !== "/" && (
+          <button onClick={() => router.back()} aria-label="ย้อนกลับ" className="p-1 text-[#6e6e73]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          </button>
+        )}
         <Mark />
         <span className="font-semibold tracking-[0.12em] text-[#1d1d1f]">M POWER</span>
       </div>
