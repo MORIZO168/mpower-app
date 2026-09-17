@@ -98,14 +98,21 @@ export function exposureFactor(samples, isBlockedFn) {
   return tot > 0 ? open / tot : 1;
 }
 
-// ---- สีจากค่าการรับแดด 0..1 (แดง=บังเยอะ → เขียว=โล่ง) คืน hex ----
+// ---- สีจากค่าการรับแดด 0..1 คืน hex ----
+// ส้ม (แดดเต็ม 1.0) -> เหลือง (แดดอ่อน ~0.9) -> ฟ้า/น้ำเงิน (มุมอับ ต่ำ)
 export function exposureColor(f) {
   const t = Math.max(0, Math.min(1, f));
-  // แดง (0.85) -> เหลือง (0.93) -> เขียว (1.0)
-  let r, g;
-  if (t < 0.9) { const k = (t - 0.6) / 0.3; r = 220; g = Math.round(60 + 180 * Math.max(0, Math.min(1, k))); }
-  else { const k = (t - 0.9) / 0.1; r = Math.round(220 - 190 * Math.max(0, Math.min(1, k))); g = 200; }
-  return "#" + [r, g, 60].map((x) => x.toString(16).padStart(2, "0")).join("");
+  let r, g, b;
+  if (t >= 0.9) {
+    const k = (t - 0.9) / 0.1; // 0.9->1.0
+    // เหลือง(245,210,90) -> ส้ม(245,130,31)
+    r = 245; g = Math.round(210 - 80 * k); b = Math.round(90 - 59 * k);
+  } else {
+    const k = Math.max(0, (t - 0.55) / 0.35); // ต่ำ(0.55)->0.9
+    // น้ำเงิน(30,91,214) -> เหลือง(245,210,90)
+    r = Math.round(30 + 215 * k); g = Math.round(91 + 119 * k); b = Math.round(214 - 124 * k);
+  }
+  return "#" + [r, g, b].map((x) => x.toString(16).padStart(2, "0")).join("");
 }
 
 function mod(a, n) { return ((a % n) + n) % n; }
