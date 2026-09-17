@@ -149,9 +149,26 @@ export default function DesignClient({ panels = [], center }) {
     if (v === "2d") setTimeout(() => { try { map.current && map.current.invalidateSize(); } catch (e) {} }, 60);
   }
 
+  function extractLatLng(s) {
+    // รองรับ: "13.88, 100.28" หรือ ลิงก์ Google Maps (@lat,lng / q=lat,lng / !3dlat!4dlng)
+    const m =
+      s.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/) ||
+      s.match(/[?&]q=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/) ||
+      s.match(/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/) ||
+      s.match(/(-?\d{1,2}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})/);
+    if (m) {
+      const lat = +m[1], lng = +m[2];
+      if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+    }
+    return null;
+  }
+
   async function search() {
     const q = query.trim();
     if (!q) return;
+    // พิกัด / ลิงก์ Google Maps → กระโดดไปเลย
+    const ll = extractLatLng(q);
+    if (ll && map.current) { map.current.setView([ll.lat, ll.lng], 20); return; }
     setSearching(true);
     try {
       const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=th&q=${encodeURIComponent(q)}`, { headers: { Accept: "application/json" } });
@@ -209,7 +226,7 @@ export default function DesignClient({ panels = [], center }) {
         <input
           value={query} onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && search()}
-          placeholder="ค้นหาที่อยู่ / สถานที่ (เช่น ถนนสุขุมวิท กรุงเทพ)"
+          placeholder="ค้นหาที่อยู่ · วางพิกัด (13.88, 100.28) · วางลิงก์ Google Maps"
           className="flex-1 rounded-xl border border-[#e8e8ed] px-3 py-2 text-sm outline-none focus:border-[#F5821F]"
         />
         <button onClick={search} disabled={searching} className="rounded-xl bg-[#1d1d1f] text-white text-sm px-4 font-medium disabled:opacity-50">
