@@ -194,3 +194,114 @@ export function offlineAnnual(kwp, tilt = 15, az = 180) {
 export const OPTIMAL_FLAT = { tilt: 15, az: 180 }; // ~15° หันใต้
 
 export const BKK = { lat: 13.7563, lng: 100.5018 };
+
+// ================= กรอบวางแผงแบบกำหนดเอง (array frames) =================
+// แผงจัดเป็นกริด rows×cols รอบจุดศูนย์กลาง หันตามทิศ az (กำหนดแนวได้)
+// array = { id, center:{lat,lng}, rows, cols, orientation:'portrait'|'landscape', off:[ 'r,c', ... ] }
+
+// เวกเตอร์หน่วยของทิศที่แผงหัน (x=ตะวันออก, y=เหนือ) จาก compass azimuth
+function facingVec(az) {
+  const a = (az * Math.PI) / 180;
+  return { x: Math.sin(a), y: Math.cos(a) }; // az=180(ใต้) -> (0,-1)
+}
+// ขนาดช่องแผง (across = ตามแนวขวาง, along = ตามแนวลาด) ตาม orientation
+function cellDims(panel, orientation) {
+  return orientation === "landscape"
+    ? { across: panel.h, along: panel.w }
+    : { across: panel.w, along: panel.h };
+}
+
+// ---- สร้างสี่เหลี่ยมแผงของ array หนึ่ง (คืน rects + count) ----
+// az = ทิศที่แผงหัน; ref = จุดอ้างอิงพิกัด; gap = ช่องว่างระหว่างแผง(ม.); rowGap เพิ่มสำหรับดาดฟ้า
+export function buildArrayRects(array, panel, az, ref, opts = {}) {
+  const gap = opts.gap ?? 0.02;
+  const rowGap = opts.rowGap ?? 0;
+  const rows = Math.max(1, array.rows | 0);
+  const cols = Math.max(1, array.cols | 0);
+  const { across, along } = cellDims(panel, array.orientation || "portrait");
+  const cellW = across + gap;         // ระยะห่างศูนย์กลางตามแนวขวาง
+  const cellH = along + rowGap + gap; // ระยะห่างศูนย์กลางตามแนวลาด
+  const down = facingVec(az);                    // แนวที่แผงหัน (ลาดลง)
+  const right = { x: down.y, y: -down.x };        // ขวา = หมุน down -90°
+  const up = { x: -down.x, y: -down.y };          // ขึ้นลาด
+  const c0 = toXY(array.center, ref);
+  const off = new Set(array.off || []);
+  const rects = [], cells = [];
+  let count = 0;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const disabled = off.has(`${r},${c}`);
+      const ai = r - (rows - 1) / 2;   // ดัชนีแนวลาด (กลาง=0)
+      const bi = c - (cols - 1) / 2;   // ดัชนีแนวขวาง
+      const cx = c0.x + right.x * bi * cellW + up.x * ai * cellH;
+      const cy = c0.y + right.y * bi * cellW + up.y * ai * cellH;
+      const hw = across / 2, hh = along / 2;
+      const corner = (sx, sy) => toLatLng(
+        { x: cx + right.x * sx * hw + up.x * sy * hh, y: cy + right.y * sx * hw + up.y * sy * hh },
+        ref
+      );
+      const corners = [corner(-1, 1), corner(1, 1), corner(1, -1), corner(-1, -1)];
+      cells.push({ corners, r, c, disabled, arrayId: array.id });
+      if (!disabled) { rects.push(corners); count++; }
+    }
+  }
+  return { rects, cells, count };
+}
+
+// ---- รวมทุก array เป็น layout เดียว (rects/count/kwp + รายตัว) ----
+export function buildLayout(arrays, panel, wattP, az, ref, opts = {}) {
+  let rects = [], count = 0;
+  const per = [], cellsByArray = {};
+  for (const a of arrays || []) {
+    const r = buildArrayRects(a, panel, az, ref, opts);
+    rects = rects.concat(r.rects);
+    count += r.count;
+    per.push({ id: a.id, count: r.count });
+    cellsByArray[a.id] = r.cells;
+  }
+  const kwp = wattP ? +((count * wattP) / 1000).toFixed(2) : 0;
+  return { rects, count, kwp, per, cellsByArray, orientation: (arrays && arrays[0]?.orientation) || "portrait" };
+}
+
+// ---- สร้าง array เริ่มต้นที่คลุมหลังคา (seed จาก bbox ในระบบพิกัดหมุนตาม az) ----
+export function seedArray(pts, panel, az, opts = {}) {
+  const gap = opts.gap ?? 0.02;
+  const rowGap = opts.rowGap ?? 0;
+  const setback = opts.setback ?? 0.3;
+  const { across, along } = cellDims(panel, "portrait");
+  const cellW = across + gap, cellH = along + rowGap + gap;
+  const ref = pts.length ? centroid(pts) : (opts.center || BKK);
+  const ctr = pts.length ? centroid(pts) : (opts.center || BKK);
+  let rows = 4, cols = 5;
+  if (pts.length >= 3) {
+    const down = facingVec(az), right = { x: down.y, y: -down.x };
+    const xy = pts.map((p) => toXY(p, ref));
+    let minA = 1e9, maxA = -1e9, minB = 1e9, maxB = -1e9;
+    for (const p of xy) {
+      const b = p.x * right.x + p.y * right.y;   // แนวขวาง
+      const a = p.x * -down.x + p.y * -down.y;   // แนวลาด (up)
+      if (a < minA) minA = a; if (a > maxA) maxA = a;
+      if (b < minB) minB = b; if (b > maxB) maxB = b;
+    }
+    const usableW = Math.max(0, maxB - minB - 2 * setback);
+    const usableH = Math.max(0, maxA - minA - 2 * setback);
+    cols = Math.max(1, Math.floor((usableW + gap) / cellW));
+    rows = Math.max(1, Math.floor((usableH + gap) / cellH));
+    cols = Math.min(cols, 40); rows = Math.min(rows, 40);
+  }
+  return { id: "a" + Math.random().toString(36).slice(2, 8), center: ctr, rows, cols, orientation: "portrait", off: [] };
+}
+
+// ---- อ่านกำลัง AC (kW) ของอินเวอร์เตอร์จากข้อความ Spec ----
+// รองรับ "5kW" "10 kW" "100kVA" "5000W"
+export function parseInverterSpec(spec) {
+  const s = String(spec || "");
+  let kw = null;
+  const mk = s.match(/(\d+(?:\.\d+)?)\s*(kw|kva)/i);
+  if (mk) kw = +mk[1];
+  else {
+    const mw = s.match(/(\d{3,6})\s*w\b/i);
+    if (mw) kw = +mw[1] / 1000;
+  }
+  return { acKw: kw };
+}
