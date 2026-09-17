@@ -13,6 +13,18 @@ const inCls = "w-full px-2.5 py-1.5 border border-[#d2d2d7] rounded-lg text-sm b
 const gradeTone = (g) => (g === "Hot" ? "bad" : g === "Warm" ? "warn" : g === "Cool" ? "mut" : "mut");
 const gradeFromTf = (tf) => (TIMEFRAMES.find((t) => t.v === tf) || {}).g || "";
 
+// 3 สเต็ปการไหลของลูกค้า: Lead (Hot/Warm/Cool) → รอติดตั้ง (นัดแล้ว) → ลูกค้า CRM (ติดตั้งเสร็จ)
+const STAGES = [
+  { key: "lead", label: "Lead", sub: "ยังไม่นัดติดตั้ง", tone: "bg-[#eef2ff] text-[#3730a3]" },
+  { key: "booked", label: "รอติดตั้ง", sub: "นัดติดตั้งแล้ว", tone: "bg-[#fff4e0] text-[#b7791f]" },
+  { key: "customer", label: "ลูกค้า CRM", sub: "ติดตั้งเสร็จแล้ว", tone: "bg-[#e8f7ee] text-[#1a7d3a]" },
+];
+const stageOf = (r) => {
+  const s = (r.Status || "").toLowerCase();
+  return s === "customer" ? "customer" : s === "booked" ? "booked" : "lead";
+};
+const stageMeta = (k) => STAGES.find((s) => s.key === k) || STAGES[0];
+
 function nextId(rows) {
   const d = new Date();
   const ym = String(d.getFullYear()).slice(2) + String(d.getMonth() + 1).padStart(2, "0");
@@ -29,7 +41,23 @@ export default function LeadsClient({ rows = [], configured, error }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState("all");
+  const [busyId, setBusyId] = useState(null);
+  const [flowMsg, setFlowMsg] = useState(null);
   const upd = (k, v) => setF((s) => ({ ...s, [k]: v }));
+
+  const counts = {
+    all: rows.length,
+    lead: rows.filter((r) => stageOf(r) === "lead").length,
+    booked: rows.filter((r) => stageOf(r) === "booked").length,
+    customer: rows.filter((r) => stageOf(r) === "customer").length,
+  };
+  const shown = tab === "all" ? rows : rows.filter((r) => stageOf(r) === tab);
+
+  async function api(body) {
+    const res = await fetch("/api/sheets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    return res.json();
+  }
 
   async function submit() {
     if (!f.Customer_Name.trim()) { setMsg({ t: "bad", m: "กรอกชื่อลูกค้าก่อน" }); return; }
@@ -40,20 +68,37 @@ export default function LeadsClient({ rows = [], configured, error }) {
       Province: f.Province, Monthly_Bill_THB: f.Monthly_Bill_THB, Est_kWp: f.Est_kWp,
       System_Type: f.battery === "สนใจ" ? "hybrid (มีแบต)" : f.battery === "ไม่สนใจ" ? "on-grid" : "",
       Grade: gradeFromTf(f.timeframe),
-      Status: "new",
+      Status: "lead",
       Next_Action: f.Next_Action,
       Note: [f.timeframe && `ติดตั้ง: ${f.timeframe}`, f.battery && `แบต: ${f.battery}`, f.Note].filter(Boolean).join(" · "),
     };
-    try {
-      const res = await fetch("/api/sheets", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "append", tab: "A-Card", obj, idField: "ACard_ID", required: ["Customer_Name"] }),
-      });
-      const d = await res.json();
-      if (d.ok) { setMsg({ t: "ok", m: `บันทึกแล้ว → ${obj.ACard_ID} (${obj.Grade})` }); setF(empty); setTimeout(() => window.location.reload(), 900); }
-      else setMsg({ t: "bad", m: d.error || "บันทึกไม่สำเร็จ" });
-    } catch (e) { setMsg({ t: "bad", m: String(e).slice(0, 120) }); }
-    setBusy(false);
+    const d = await api({ action: "append", tab: "A-Card", obj, idField: "ACard_ID", required: ["Customer_Name"] });
+    if (d.ok) { setMsg({ t: "ok", m: `บันทึกแล้ว → ${obj.ACard_ID} (${obj.Grade})` }); setF(empty); setTimeout(() => window.location.reload(), 900); }
+    else { setMsg({ t: "bad", m: d.error || "บันทึกไม่สำเร็จ" }); setBusy(false); }
+  }
+
+  // Lead → รอติดตั้ง
+  async function book(r) {
+    if (!configured) return;
+    setBusyId(r.ACard_ID); setFlowMsg(null);
+    const d = await api({ action: "update", tab: "A-Card", idField: "ACard_ID", idValue: r.ACard_ID, patch: { Status: "booked" } });
+    if (d.ok) window.location.reload();
+    else { setFlowMsg({ t: "bad", m: d.error || "อัปเดตไม่สำเร็จ" }); setBusyId(null); }
+  }
+  // รอติดตั้ง → ลูกค้า CRM (ติดตั้งเสร็จ + ดันเข้าฐาน O&M)
+  async function complete(r) {
+    if (!configured) return;
+    setBusyId(r.ACard_ID); setFlowMsg(null);
+    const site = {
+      Site_ID: r.ACard_ID, Customer_Name: r.Customer_Name, Area: r.Province || "", Brand: "Atmoce",
+      kWp: r.Est_kWp || "", Battery_kWh: "", Install_Date: today(), Last_Service_Date: today(),
+      Ticket_Issue: "", Ticket_Status: "",
+    };
+    const a = await api({ action: "append", tab: "Installed_Base", obj: site, idField: "Site_ID", required: ["Customer_Name"] });
+    if (!a.ok) { setFlowMsg({ t: "bad", m: "สร้างงานติดตั้งไม่สำเร็จ: " + (a.error || "") }); setBusyId(null); return; }
+    const d = await api({ action: "update", tab: "A-Card", idField: "ACard_ID", idValue: r.ACard_ID, patch: { Status: "customer" } });
+    if (d.ok) window.location.reload();
+    else { setFlowMsg({ t: "bad", m: d.error || "อัปเดตสถานะไม่สำเร็จ" }); setBusyId(null); }
   }
 
   return (
@@ -61,13 +106,24 @@ export default function LeadsClient({ rows = [], configured, error }) {
       <div className="flex items-center gap-3 mb-4">
         <div>
           <h1 className="text-xl font-bold text-[#1d1d1f]">ลูกค้า / A-Card</h1>
-          <p className="text-sm text-[#6e6e73] mt-0.5">รับ lead · เกรด Hot/Warm/Cool จากกรอบเวลาติดตั้ง · เชื่อม Google Sheet</p>
+          <p className="text-sm text-[#6e6e73] mt-0.5">Lead (Hot/Warm/Cool) → รอติดตั้ง → ลูกค้า CRM · เลื่อนสถานะทีละสเต็ป</p>
         </div>
-        <span className={`ml-auto pill pill-${configured ? "ok" : "mut"}`}>{configured ? "เชื่อม Sheet แล้ว" : "ยังไม่เชื่อม Sheet"}</span>
+        <span className={`ml-auto pill pill-${configured ? "ok" : "mut"}`}>{configured ? "เชื่อมข้อมูลแล้ว" : "ยังไม่เชื่อม"}</span>
       </div>
 
-      {error && <div className="card p-3 mb-4 text-sm text-[#c0392b]">อ่านชีตไม่สำเร็จ: {error}</div>}
+      {error && <div className="card p-3 mb-4 text-sm text-[#c0392b]">อ่านข้อมูลไม่สำเร็จ: {error}</div>}
       {!configured && <div className="card p-3 mb-4 text-sm text-[#6e6e73]">ยังไม่ได้ตั้งค่า env — ตั้งค่าตามคู่มือก่อน</div>}
+
+      {/* funnel สรุป 3 สเต็ป */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        {STAGES.map((s) => (
+          <div key={s.key} className="card p-4">
+            <div className="text-2xl font-bold text-[#1d1d1f]">{counts[s.key]}</div>
+            <div className="text-[13px] text-[#1d1d1f] font-medium mt-0.5">{s.label}</div>
+            <div className="text-[11px] text-[#a1a1a6]">{s.sub}</div>
+          </div>
+        ))}
+      </div>
 
       <div className="card p-5 mb-4">
         <button onClick={() => setOpen((o) => !o)} className="bg-[#F5821F] text-white rounded-lg px-4 py-2 text-sm font-semibold">
@@ -101,7 +157,7 @@ export default function LeadsClient({ rows = [], configured, error }) {
             </div>
             {f.timeframe && <div className="mt-2 text-[12px] text-[#6e6e73]">เกรดอัตโนมัติ: <span className={`pill pill-${gradeTone(gradeFromTf(f.timeframe))}`}>{gradeFromTf(f.timeframe)}</span></div>}
             <div className="flex items-center gap-3 mt-3">
-              <button onClick={submit} disabled={busy} className="bg-[#1d1d1f] text-white rounded-lg px-5 py-2 text-sm font-semibold disabled:opacity-50">{busy ? "กำลังบันทึก…" : "บันทึกเข้า Sheet"}</button>
+              <button onClick={submit} disabled={busy} className="bg-[#1d1d1f] text-white rounded-lg px-5 py-2 text-sm font-semibold disabled:opacity-50">{busy ? "กำลังบันทึก…" : "บันทึก A-Card"}</button>
               {msg && <span className={`text-sm ${msg.t === "ok" ? "text-[#1a7d3a]" : "text-[#c0392b]"}`}>{msg.m}</span>}
               <span className="text-[11px] text-[#a1a1a6] ml-auto">ID ออกอัตโนมัติ · Date = วันนี้</span>
             </div>
@@ -110,30 +166,49 @@ export default function LeadsClient({ rows = [], configured, error }) {
       </div>
 
       <div className="card p-5">
-        <div className="font-semibold text-[#1d1d1f] mb-3">รายการ A-Card ({rows.length})</div>
+        {/* แท็บกรองตามสเต็ป */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          {[{ key: "all", label: "ทั้งหมด" }, ...STAGES].map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`text-[13px] px-3 py-1.5 rounded-full border ${tab === t.key ? "bg-[#1d1d1f] text-white border-[#1d1d1f]" : "bg-white text-[#6e6e73] border-[#e2e2e7]"}`}>
+              {t.label} ({counts[t.key]})
+            </button>
+          ))}
+          {flowMsg && <span className={`text-[13px] ml-auto ${flowMsg.t === "ok" ? "text-[#1a7d3a]" : "text-[#c0392b]"}`}>{flowMsg.m}</span>}
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px] min-w-[640px]">
+          <table className="w-full text-[13px] min-w-[720px]">
             <thead><tr className="text-[#a1a1a6] text-[11px] text-left border-b border-[#eee]">
-              <th className="py-1.5">ID</th><th>ลูกค้า</th><th>ช่องทาง</th><th>ประเภท</th><th>จังหวัด</th><th className="text-right">ค่าไฟ</th><th className="text-center">เกรด</th><th>สถานะ</th><th>ถัดไป</th>
+              <th className="py-1.5">ID</th><th>ลูกค้า</th><th>ช่องทาง</th><th>จังหวัด</th><th className="text-right">ค่าไฟ</th><th className="text-center">เกรด</th><th>สถานะ</th><th className="text-right">เลื่อนสเต็ป</th>
             </tr></thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.ACard_ID || r._row} className="border-b border-[#f4f4f6]">
-                  <td className="py-2 text-[#6e6e73]">{r.ACard_ID}</td>
-                  <td className="font-medium text-[#1d1d1f]">{r.Customer_Name}<div className="text-[11px] text-[#a1a1a6]">{r.Phone_LINE}</div></td>
-                  <td className="text-[#6e6e73]">{r.Source}</td>
-                  <td className="text-[#6e6e73]">{r.Type}</td>
-                  <td className="text-[#6e6e73]">{r.Province}</td>
-                  <td className="text-right text-[#6e6e73]">{r.Monthly_Bill_THB}</td>
-                  <td className="text-center">{r.Grade && <span className={`pill pill-${gradeTone(r.Grade)}`}>{r.Grade}</span>}</td>
-                  <td className="text-[#6e6e73]">{r.Status}</td>
-                  <td className="text-[#6e6e73]">{r.Next_Action}</td>
-                </tr>
-              ))}
-              {rows.length === 0 && <tr><td colSpan={9} className="py-6 text-center text-[#a1a1a6]">ยังไม่มีข้อมูล — กด "เพิ่ม A-Card ใหม่" เพื่อเริ่ม</td></tr>}
+              {shown.map((r) => {
+                const st = stageOf(r);
+                const meta = stageMeta(st);
+                const rowBusy = busyId === r.ACard_ID;
+                return (
+                  <tr key={r.ACard_ID || r._row} className="border-b border-[#f4f4f6]">
+                    <td className="py-2 text-[#6e6e73]">{r.ACard_ID}</td>
+                    <td className="font-medium text-[#1d1d1f]">{r.Customer_Name}<div className="text-[11px] text-[#a1a1a6]">{r.Phone_LINE}</div></td>
+                    <td className="text-[#6e6e73]">{r.Source}</td>
+                    <td className="text-[#6e6e73]">{r.Province}</td>
+                    <td className="text-right text-[#6e6e73]">{r.Monthly_Bill_THB}</td>
+                    <td className="text-center">{r.Grade && <span className={`pill pill-${gradeTone(r.Grade)}`}>{r.Grade}</span>}</td>
+                    <td><span className={`text-[11px] px-2 py-0.5 rounded-full ${meta.tone}`}>{meta.label}</span></td>
+                    <td className="text-right">
+                      {st === "lead" && <button onClick={() => book(r)} disabled={!configured || rowBusy} className="text-[12px] px-3 py-1.5 rounded-lg bg-[#F5821F] text-white disabled:opacity-40">{rowBusy ? "…" : "นัดติดตั้งแล้ว →"}</button>}
+                      {st === "booked" && <button onClick={() => complete(r)} disabled={!configured || rowBusy} className="text-[12px] px-3 py-1.5 rounded-lg bg-[#1a7d3a] text-white disabled:opacity-40">{rowBusy ? "…" : "ติดตั้งเสร็จ → CRM"}</button>}
+                      {st === "customer" && <span className="text-[12px] text-[#1a7d3a]">✓ เข้าระบบแล้ว</span>}
+                    </td>
+                  </tr>
+                );
+              })}
+              {shown.length === 0 && <tr><td colSpan={8} className="py-6 text-center text-[#a1a1a6]">ยังไม่มีรายการในสเต็ปนี้</td></tr>}
             </tbody>
           </table>
         </div>
+        <p className="text-[11px] text-[#a1a1a6] mt-3">กด “นัดติดตั้งแล้ว” เมื่อ booking · กด “ติดตั้งเสร็จ → CRM” เมื่อจบงาน ระบบจะย้ายลูกค้าเข้าฐานดูแลหลังติดตั้ง (O&M) และเริ่มนับรอบล้างแผงให้อัตโนมัติ</p>
       </div>
     </div>
   );
