@@ -20,7 +20,7 @@ let _client = null;
 function db() {
   if (!_client) {
     if (!isConfigured()) throw new Error("ยังไม่ได้ตั้ง env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY");
-    _client = createClient(URL, KEY, { auth: { persistSession: false } });
+    _client = createClient(URL, KEY, { auth: { persistSession: false }, global: { fetch: (u, o = {}) => fetch(u, { ...o, cache: "no-store" }) } });
   }
   return _client;
 }
