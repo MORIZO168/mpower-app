@@ -28,8 +28,8 @@ export default async function Dashboard() {
   try {
     configured = isConfigured();
     if (configured) {
-      try { acard = await getRows("A-Card"); } catch (e) { acard = []; }
-      try { const r = await getRows("Installed_Base"); sites = (r || []).map(siteFromRow); } catch (e) { sites = []; }
+      try { acard = (await getRows("A-Card")).rows || []; } catch (e) { acard = []; }
+      try { const r = await getRows("Installed_Base"); sites = (r.rows || []).map(siteFromRow); } catch (e) { sites = []; }
     }
   } catch (e) { /* ignore */ }
 
