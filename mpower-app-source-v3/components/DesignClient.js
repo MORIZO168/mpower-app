@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useMemo } from "react";
 import "leaflet/dist/leaflet.css";
+import Roof3D from "@/components/Roof3D";
 import {
   areaM2, edgeLengths, centroid, suggestAzimuth, azimuthLabel,
   toPvgisAspect, packPanels, parsePanelSpec, offlineAnnual, OPTIMAL_FLAT, BKK,
@@ -38,6 +39,8 @@ export default function DesignClient({ panels = [], center }) {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [view, setView] = useState("2d"); // 2d | 3d
+  const [shadeFactor, setShadeFactor] = useState(1);
 
   // ---- สเปคแผงปัจจุบัน ----
   const panelSpec = useMemo(() => {
@@ -141,6 +144,10 @@ export default function DesignClient({ panels = [], center }) {
   function finishDraw() { setDrawing(false); }
   function clearAll() { setDrawing(false); setPts([]); ptsRef.current = []; setResult(null); setSaved(false); }
   function undoPt() { const n = ptsRef.current.slice(0, -1); ptsRef.current = n; setPts(n); }
+  function switchView(v) {
+    setView(v);
+    if (v === "2d") setTimeout(() => { try { map.current && map.current.invalidateSize(); } catch (e) {} }, 60);
+  }
 
   async function search() {
     const q = query.trim();
@@ -177,11 +184,14 @@ export default function DesignClient({ panels = [], center }) {
       panelWatt: panelSpec.watt, orientation: layout.orientation, roofType, tilt, azimuth: az,
       lat: +c.lat.toFixed(6), lng: +c.lng.toFixed(6),
       annual: result?.annual || offlineAnnual(kwp, tilt, az),
+      shadeFactor: +shadeFactor.toFixed(3),
+      annualNet: Math.round((result?.annual || offlineAnnual(kwp, tilt, az)) * shadeFactor),
     };
     try { localStorage.setItem("mpower_design", JSON.stringify(design)); setSaved(true); } catch (e) {}
   }
 
   const specYield = result && kwp ? Math.round(result.annual / kwp) : 0;
+  const annualNet = result ? Math.round(result.annual * shadeFactor) : 0;
   const canDraw = pts.length >= 3;
 
   return (
@@ -207,8 +217,27 @@ export default function DesignClient({ panels = [], center }) {
         </button>
       </div>
 
+      {/* สลับมุมมอง 2D/3D */}
+      {pts.length >= 3 && (
+        <div className="flex gap-2 mb-3">
+          {[["2d", "🗺️ แผนที่ 2D"], ["3d", "🧊 3D + เงา"]].map(([k, lb]) => (
+            <button key={k} onClick={() => switchView(k)}
+              className={`rounded-xl px-4 py-1.5 text-[13px] font-medium border ${view === k ? "border-[#F5821F] bg-[#fff6ef] text-[#F5821F]" : "border-[#e8e8ed] text-[#6e6e73]"}`}>
+              {lb}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* มุมมอง 3D */}
+      {view === "3d" && pts.length >= 3 && (
+        <div className="mb-3">
+          <Roof3D pts={pts} tilt={tilt} az={az} rects={layout.rects} center={centroid(pts)} roofType={roofType} onShading={setShadeFactor} />
+        </div>
+      )}
+
       {/* แผนที่ */}
-      <div className="card overflow-hidden mb-3 relative">
+      <div className="card overflow-hidden mb-3 relative" style={{ display: view === "3d" ? "none" : "block" }}>
         <div ref={mapEl} style={{ height: "52vh", minHeight: 320, width: "100%" }} />
         {/* แถบเครื่องมือวาด ลอยบนแผนที่ */}
         <div className="absolute z-[500] left-3 top-3 flex gap-2">
@@ -354,6 +383,12 @@ export default function DesignClient({ panels = [], center }) {
                   <div className="text-3xl font-bold text-[#1d1d1f]">{num(result.annual)}</div>
                   <div className="text-[12px] text-[#6e6e73]">kWh / ปี · {num(specYield)} kWh/kWp</div>
                 </div>
+                {shadeFactor < 0.999 && (
+                  <div className="text-center rounded-xl bg-[#fff6ef] py-2">
+                    <div className="text-xl font-bold text-[#F5821F]">{num(annualNet)}</div>
+                    <div className="text-[11px] text-[#6e6e73]">kWh / ปี หลังหักเงา ({((1 - shadeFactor) * 100).toFixed(0)}% เสียเงา)</div>
+                  </div>
+                )}
                 {result.monthly && <MonthlyChart data={result.monthly} />}
                 <div className="text-[11px] text-[#a1a1a6]">{result.source}</div>
                 <button onClick={saveDesign} className="w-full rounded-xl border border-[#e8e8ed] text-[13px] py-2 font-medium text-[#1d1d1f]">
