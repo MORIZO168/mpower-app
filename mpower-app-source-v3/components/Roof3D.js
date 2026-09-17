@@ -185,7 +185,7 @@ export default function Roof3D({ pts, tilt = 15, az = 180, rects = [], center, r
     const centers = [];
     if (count > 0) {
       const geo = new THREE.BoxGeometry(1, 0.06, 1);
-      const mat = new THREE.MeshStandardMaterial({ color: "#1e5bd6", metalness: 0.15, roughness: 0.55 });
+      const mat = new THREE.MeshStandardMaterial({ color: "#ffffff", metalness: 0.15, roughness: 0.55 });
       const inst = new THREE.InstancedMesh(geo, mat, count);
       inst.castShadow = false; inst.receiveShadow = true;
       const m4 = new THREE.Matrix4(), sV = new THREE.Vector3(), pV = new THREE.Vector3();
@@ -375,7 +375,7 @@ export default function Roof3D({ pts, tilt = 15, az = 180, rects = [], center, r
         {shade && (
           <div className="text-[12px] text-[#6e6e73]">
             แผงรับแดดเฉลี่ย <b className="text-[#1d1d1f]">{(shade.factor * 100).toFixed(0)}%</b> ของท้องฟ้าโปร่ง —
-            เขียว=โล่ง แดง=โดนเงาบ่อย · ผลผลิตหลังหักเงาแสดงในการ์ดผลผลิต
+            <span className="text-[#F5821F] font-semibold">ส้ม=แดดเต็ม</span> · เหลือง=แดดอ่อน · <span className="text-[#1e5bd6] font-semibold">ฟ้า/น้ำเงิน=มุมอับ</span> · ผลผลิตหลังหักเงาแสดงในการ์ดผลผลิต
           </div>
         )}
         {!ready && <div className="text-[12px] text-[#6e6e73]">กำลังโหลดโมเดล 3 มิติ…</div>}
